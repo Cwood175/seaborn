@@ -253,6 +253,11 @@ class _LinePlotter(_RelationalPlotter):
 
         # Initialize the aggregation object
         weighted = "weight" in self.plot_data
+        if weighted:
+            weights = self.plot_data["weight"]
+            if weights.sum() == 0:
+                err = "Weights sum to zero, can't be normalized."
+                raise ValueError(err)
         agg = (WeightedAggregator if weighted else EstimateAggregator)(
             self.estimator, self.errorbar, n_boot=self.n_boot, seed=self.seed,
         )
