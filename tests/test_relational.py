@@ -1074,6 +1074,8 @@ class TestLinePlotter(SharedAxesLevelTests, Helpers):
         vals = ax.lines[0].get_ydata()
         for i, label in enumerate(ax.get_xticklabels()):
             pos_df = long_df.loc[long_df["a"] == label.get_text()]
+            if len(pos_df) == 0:
+                continue
             expected = np.average(pos_df["y"], weights=pos_df["x"])
             assert vals[i] == pytest.approx(expected)
 

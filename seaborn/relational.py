@@ -291,6 +291,9 @@ class _LinePlotter(_RelationalPlotter):
                 # Could pass as_index=False instead of reset_index,
                 # but that fails on a corner case with older pandas.
                 sub_data = grouped.apply(agg, other).reset_index()
+                if sub_data.empty:
+                    sub_data[f"{other}min"] = np.nan
+                    sub_data[f"{other}max"] = np.nan
             else:
                 sub_data[f"{other}min"] = np.nan
                 sub_data[f"{other}max"] = np.nan
@@ -306,6 +309,8 @@ class _LinePlotter(_RelationalPlotter):
             if "units" in self.variables:   # XXX why not add to grouping variables?
                 lines = []
                 for _, unit_data in sub_data.groupby("units"):
+                    if unit_data.empty:
+                        continue
                     lines.extend(ax.plot(unit_data["x"], unit_data["y"], **kws))
             else:
                 lines = ax.plot(sub_data["x"], sub_data["y"], **kws)
