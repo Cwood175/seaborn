@@ -476,6 +476,7 @@ def test_get_dataset_names():
 
 
 @_network(url=DATASET_NAMES_URL)
+@pytest.mark.filterwarnings("ignore::urllib.error.HTTPError")
 def test_load_datasets():
 
     # Heavy test to verify that we can load all available datasets
