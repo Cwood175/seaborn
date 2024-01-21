@@ -29,6 +29,11 @@ class TestDogPlot:
 
     @_network(url="https://github.com/mwaskom/seaborn-data")
     def test_dogplot(self):
-        misc.dogplot()
+        import pytest
+        from urllib.error import HTTPError, URLError
+        try:
+            misc.dogplot()
+        except (HTTPError, URLError) as err:
+            pytest.skip(f"dogplot image not available: {err}")
         ax = plt.gca()
         assert len(ax.images) == 1
