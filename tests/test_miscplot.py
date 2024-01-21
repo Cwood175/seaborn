@@ -2,11 +2,13 @@ import matplotlib.pyplot as plt
 
 from seaborn import miscplot as misc
 from seaborn.palettes import color_palette
+
 from .test_utils import _network
 
 
 class TestPalPlot:
     """Test the function that visualizes a color palette."""
+
     def test_palplot_size(self):
 
         pal4 = color_palette("husl", 4)
@@ -26,9 +28,11 @@ class TestPalPlot:
 
 
 class TestDogPlot:
-
     @_network(url="https://github.com/mwaskom/seaborn-data")
-    def test_dogplot(self):
+    def test_dogplot(self, monkeypatch, tmp_path):
+        image_path = tmp_path / "dog.png"
+        plt.imsave(str(image_path), np.zeros((2, 2, 3)))
+        monkeypatch.setattr(misc, "urlopen", lambda url: open(str(image_path), "rb"))
         misc.dogplot()
         ax = plt.gca()
         assert len(ax.images) == 1
