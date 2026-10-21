@@ -1,34 +1,32 @@
 import itertools
-from functools import partial
 import warnings
+from functools import partial
 
-import numpy as np
-import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from matplotlib.colors import same_color, to_rgb, to_rgba
-
+import numpy as np
+import pandas as pd
 import pytest
-from pytest import approx
+from matplotlib.colors import same_color, to_rgb, to_rgba
 from numpy.testing import (
+    assert_array_almost_equal,
     assert_array_equal,
     assert_array_less,
-    assert_array_almost_equal,
 )
+from pytest import approx
 
 from seaborn import categorical as cat
-
 from seaborn._base import categorical_order
 from seaborn._compat import get_colormap, get_legend_handles
 from seaborn._testing import assert_plots_equal
 from seaborn.categorical import (
-    _CategoricalPlotter,
     Beeswarm,
     BoxPlotContainer,
-    catplot,
+    _CategoricalPlotter,
     barplot,
-    boxplot,
     boxenplot,
+    boxplot,
+    catplot,
     countplot,
     pointplot,
     stripplot,
@@ -37,7 +35,6 @@ from seaborn.categorical import (
 )
 from seaborn.palettes import color_palette
 from seaborn.utils import _draw_figure, _version_predates, desaturate
-
 
 PLOT_FUNCS = [
     catplot,
@@ -52,7 +49,6 @@ PLOT_FUNCS = [
 
 
 class TestCategoricalPlotterNew:
-
     @pytest.mark.parametrize(
         "func,kwargs",
         itertools.product(
@@ -66,7 +62,6 @@ class TestCategoricalPlotterNew:
         ),
     )
     def test_axis_labels(self, long_df, func, kwargs):
-
         func(data=long_df, **kwargs)
 
         ax = plt.gca()
@@ -77,7 +72,6 @@ class TestCategoricalPlotterNew:
 
     @pytest.mark.parametrize("func", PLOT_FUNCS)
     def test_empty(self, func):
-
         func()
         ax = plt.gca()
         assert not ax.collections
@@ -91,7 +85,6 @@ class TestCategoricalPlotterNew:
         assert not ax.lines
 
     def test_redundant_hue_backcompat(self, long_df):
-
         p = _CategoricalPlotter(
             data=long_df,
             variables={"x": "s", "y": "y"},
@@ -109,7 +102,6 @@ class TestCategoricalPlotterNew:
 
 
 class SharedAxesLevelTests:
-
     def orient_indices(self, orient):
         pos_idx = ["x", "y"].index(orient)
         val_idx = ["y", "x"].index(orient)
@@ -121,7 +113,6 @@ class SharedAxesLevelTests:
 
     @pytest.mark.parametrize("orient", ["x", "y"])
     def test_labels_long(self, long_df, orient):
-
         depend = {"x": "y", "y": "x"}[orient]
         kws = {orient: "a", depend: "y", "hue": "b"}
 
@@ -146,7 +137,6 @@ class SharedAxesLevelTests:
         assert hue_labels == hue_levels
 
     def test_labels_wide(self, wide_df):
-
         wide_df = wide_df.rename_axis("cols", axis=1)
         ax = self.func(wide_df)
 
@@ -159,7 +149,6 @@ class SharedAxesLevelTests:
             assert label == level
 
     def test_labels_hue_order(self, long_df):
-
         hue_var = "b"
         hue_order = categorical_order(long_df[hue_var])[::-1]
         ax = self.func(long_df, x="a", y="y", hue=hue_var, hue_order=hue_order)
@@ -188,14 +177,12 @@ class SharedAxesLevelTests:
         assert self.get_last_color(ax) == to_rgba("C3")
 
     def test_two_calls(self):
-
         ax = plt.figure().subplots()
         self.func(x=["a", "b", "c"], y=[1, 2, 3], ax=ax)
         self.func(x=["e", "f"], y=[4, 5], ax=ax)
-        assert ax.get_xlim() == (-.5, 4.5)
+        assert ax.get_xlim() == (-0.5, 4.5)
 
     def test_redundant_hue_legend(self, long_df):
-
         ax = self.func(long_df, x="a", y="y", hue="a")
         assert ax.get_legend() is None
         ax.clear()
@@ -205,7 +192,6 @@ class SharedAxesLevelTests:
 
     @pytest.mark.parametrize("orient", ["x", "y"])
     def test_log_scale(self, long_df, orient):
-
         depvar = {"x": "y", "y": "x"}[orient]
         variables = {orient: "a", depvar: "z"}
         ax = self.func(long_df, **variables, log_scale=True)
@@ -217,7 +203,6 @@ class SharedScatterTests(SharedAxesLevelTests):
     """Tests functionality common to stripplot and swarmplot."""
 
     def get_last_color(self, ax):
-
         colors = ax.collections[-1].get_facecolors()
         unique_colors = np.unique(colors, axis=0)
         assert len(unique_colors) == 1
@@ -226,7 +211,6 @@ class SharedScatterTests(SharedAxesLevelTests):
     # ------------------------------------------------------------------------------
 
     def test_color(self, long_df, common_kws):
-
         super().test_color(long_df, common_kws)
 
         ax = plt.figure().subplots()
@@ -238,7 +222,6 @@ class SharedScatterTests(SharedAxesLevelTests):
         assert self.get_last_color(ax) == to_rgba("C5")
 
     def test_supplied_color_array(self, long_df):
-
         cmap = get_colormap("Blues")
         norm = mpl.colors.Normalize()
         colors = cmap(norm(long_df["y"].to_numpy()))
@@ -246,7 +229,6 @@ class SharedScatterTests(SharedAxesLevelTests):
         keys = ["c", "fc", "facecolor", "facecolors"]
 
         for key in keys:
-
             ax = plt.figure().subplots()
             self.func(x=long_df["y"], **{key: colors})
             _draw_figure(ax.figure)
@@ -258,7 +240,6 @@ class SharedScatterTests(SharedAxesLevelTests):
         assert_array_equal(ax.collections[0].get_facecolors(), colors)
 
     def test_unfilled_marker(self, long_df):
-
         with warnings.catch_warnings():
             warnings.simplefilter("error", UserWarning)
             ax = self.func(long_df, x="y", y="a", marker="x", color="r")
@@ -267,15 +248,19 @@ class SharedScatterTests(SharedAxesLevelTests):
                 assert same_color(points.get_edgecolors().squeeze(), "r")
 
     @pytest.mark.parametrize(
-        "orient,data_type", [
-            ("h", "dataframe"), ("h", "dict"),
-            ("v", "dataframe"), ("v", "dict"),
-            ("y", "dataframe"), ("y", "dict"),
-            ("x", "dataframe"), ("x", "dict"),
-        ]
+        "orient,data_type",
+        [
+            ("h", "dataframe"),
+            ("h", "dict"),
+            ("v", "dataframe"),
+            ("v", "dict"),
+            ("y", "dataframe"),
+            ("y", "dict"),
+            ("x", "dataframe"),
+            ("x", "dict"),
+        ],
     )
     def test_wide(self, wide_df, orient, data_type):
-
         if data_type == "dict":
             wide_df = {k: v.to_numpy() for k, v in wide_df.items()}
 
@@ -289,7 +274,6 @@ class SharedScatterTests(SharedAxesLevelTests):
         cat_axis = axis_objs[cat_idx]
 
         for i, label in enumerate(cat_axis.get_majorticklabels()):
-
             key = label.get_text()
             points = ax.collections[i]
             point_pos = points.get_offsets().T
@@ -304,7 +288,6 @@ class SharedScatterTests(SharedAxesLevelTests):
 
     @pytest.mark.parametrize("orient", ["h", "v"])
     def test_flat(self, flat_series, orient):
-
         ax = self.func(data=flat_series, orient=orient)
         _draw_figure(ax.figure)
 
@@ -340,7 +323,6 @@ class SharedScatterTests(SharedAxesLevelTests):
         ],
     )
     def test_positions(self, long_df, variables, orient):
-
         cat_var = variables["cat"]
         val_var = variables["val"]
         hue_var = variables["hue"]
@@ -348,7 +330,11 @@ class SharedScatterTests(SharedAxesLevelTests):
         x_var, y_var, *_ = var_names
 
         ax = self.func(
-            data=long_df, x=x_var, y=y_var, hue=hue_var, orient=orient,
+            data=long_df,
+            x=x_var,
+            y=y_var,
+            hue=hue_var,
+            orient=orient,
         )
 
         _draw_figure(ax.figure)
@@ -364,7 +350,6 @@ class SharedScatterTests(SharedAxesLevelTests):
         cat_levels = categorical_order(cat_data)
 
         for i, label in enumerate(cat_levels):
-
             vals = long_df.loc[cat_data == label, val_var]
 
             points = ax.collections[i].get_offsets().T
@@ -373,7 +358,7 @@ class SharedScatterTests(SharedAxesLevelTests):
 
             assert_array_equal(val_pos, val_axis.convert_units(vals))
             assert_array_equal(cat_pos.round(), i)
-            assert 0 <= np.ptp(cat_pos) <= .8
+            assert 0 <= np.ptp(cat_pos) <= 0.8
 
             label = pd.Index([label]).astype(str)[0]
             assert cat_axis.get_majorticklabels()[i].get_text() == label
@@ -388,7 +373,6 @@ class SharedScatterTests(SharedAxesLevelTests):
         ],
     )
     def test_positions_dodged(self, long_df, variables):
-
         cat_var = variables["cat"]
         val_var = variables["val"]
         hue_var = variables["hue"]
@@ -396,16 +380,20 @@ class SharedScatterTests(SharedAxesLevelTests):
         x_var, y_var, *_ = var_names
 
         ax = self.func(
-            data=long_df, x=x_var, y=y_var, hue=hue_var, dodge=True,
+            data=long_df,
+            x=x_var,
+            y=y_var,
+            hue=hue_var,
+            dodge=True,
         )
 
         cat_vals = categorical_order(long_df[cat_var])
         hue_vals = categorical_order(long_df[hue_var])
 
         n_hue = len(hue_vals)
-        offsets = np.linspace(0, .8, n_hue + 1)[:-1]
+        offsets = np.linspace(0, 0.8, n_hue + 1)[:-1]
         offsets -= offsets.mean()
-        nest_width = .8 / n_hue
+        nest_width = 0.8 / n_hue
 
         for i, cat_val in enumerate(cat_vals):
             for j, hue_val in enumerate(hue_vals):
@@ -427,17 +415,15 @@ class SharedScatterTests(SharedAxesLevelTests):
 
     @pytest.mark.parametrize("cat_var", ["a", "s", "d"])
     def test_positions_unfixed(self, long_df, cat_var):
-
         long_df = long_df.sort_values(cat_var)
 
-        kws = dict(size=.001)
+        kws = dict(size=0.001)
         if "stripplot" in str(self.func):  # can't use __name__ with partial
             kws["jitter"] = False
 
         ax = self.func(data=long_df, x=cat_var, y="y", native_scale=True, **kws)
 
         for i, (cat_level, cat_data) in enumerate(long_df.groupby(cat_var)):
-
             points = ax.collections[i].get_offsets().T
             cat_pos = points[0]
             val_pos = points[1]
@@ -459,10 +445,9 @@ class SharedScatterTests(SharedAxesLevelTests):
             (int, [3, 1]),
             (int, [1, 2, 3, 4]),
             (int, ["3", "1", "2"]),
-        ]
+        ],
     )
     def test_order(self, x_type, order):
-
         if x_type is str:
             x = ["b", "a", "c"]
         else:
@@ -480,7 +465,7 @@ class SharedScatterTests(SharedAxesLevelTests):
         assert len(ax.collections) == len(order)
         tick_labels = ax.xaxis.get_majorticklabels()
 
-        assert ax.get_xlim()[1] == (len(order) - .5)
+        assert ax.get_xlim()[1] == (len(order) - 0.5)
 
         for i, points in enumerate(ax.collections):
             cat = order[i]
@@ -495,7 +480,6 @@ class SharedScatterTests(SharedAxesLevelTests):
 
     @pytest.mark.parametrize("hue_var", ["a", "b"])
     def test_hue_categorical(self, long_df, hue_var):
-
         cat_var = "b"
 
         hue_levels = categorical_order(long_df[hue_var])
@@ -506,7 +490,6 @@ class SharedScatterTests(SharedAxesLevelTests):
         ax = self.func(data=long_df, x=cat_var, y="y", hue=hue_var, palette=pal_name)
 
         for i, level in enumerate(cat_levels):
-
             sub_df = long_df[long_df[cat_var] == level]
             point_hues = sub_df[hue_var]
 
@@ -520,7 +503,6 @@ class SharedScatterTests(SharedAxesLevelTests):
 
     @pytest.mark.parametrize("hue_var", ["a", "b"])
     def test_hue_dodged(self, long_df, hue_var):
-
         ax = self.func(data=long_df, x="y", y="a", hue=hue_var, dodge=True)
         colors = color_palette(n_colors=long_df[hue_var].nunique())
         collections = iter(ax.collections)
@@ -540,7 +522,6 @@ class SharedScatterTests(SharedAxesLevelTests):
         list(itertools.product(["x", "y"], ["b", "y", "t"], [None, "a"])),
     )
     def test_single(self, long_df, val_var, val_col, hue_col):
-
         var_kws = {val_var: val_col, "hue": hue_col}
         ax = self.func(data=long_df, **var_kws)
         _draw_figure(ax.figure)
@@ -559,16 +540,14 @@ class SharedScatterTests(SharedAxesLevelTests):
         val_pos = point_pos[val_idx]
 
         assert_array_equal(cat_pos.round(), 0)
-        assert cat_pos.max() <= .4
-        assert cat_pos.min() >= -.4
+        assert cat_pos.max() <= 0.4
+        assert cat_pos.min() >= -0.4
 
         num_vals = val_axis.convert_units(long_df[val_col])
         assert_array_equal(val_pos, num_vals)
 
         if hue_col is not None:
-            palette = dict(zip(
-                categorical_order(long_df[hue_col]), color_palette()
-            ))
+            palette = dict(zip(categorical_order(long_df[hue_col]), color_palette()))
 
         facecolors = points.get_facecolors()
         for i, color in enumerate(facecolors):
@@ -584,7 +563,6 @@ class SharedScatterTests(SharedAxesLevelTests):
         assert not ticklabels[0].get_text()
 
     def test_attributes(self, long_df):
-
         kwargs = dict(
             size=2,
             linewidth=1,
@@ -592,34 +570,30 @@ class SharedScatterTests(SharedAxesLevelTests):
         )
 
         ax = self.func(x=long_df["y"], **kwargs)
-        points, = ax.collections
+        (points,) = ax.collections
 
         assert points.get_sizes().item() == kwargs["size"] ** 2
         assert points.get_linewidths().item() == kwargs["linewidth"]
         assert tuple(points.get_edgecolors().squeeze()) == to_rgba(kwargs["edgecolor"])
 
     def test_three_points(self):
-
         x = np.arange(3)
         ax = self.func(x=x)
         for point_color in ax.collections[0].get_facecolor():
             assert tuple(point_color) == to_rgba("C0")
 
     def test_legend_categorical(self, long_df):
-
         ax = self.func(data=long_df, x="y", y="a", hue="b")
         legend_texts = [t.get_text() for t in ax.legend_.texts]
         expected = categorical_order(long_df["b"])
         assert legend_texts == expected
 
     def test_legend_numeric(self, long_df):
-
         ax = self.func(data=long_df, x="y", y="a", hue="z")
         vals = [float(t.get_text()) for t in ax.legend_.texts]
         assert (vals[1] - vals[0]) == approx(vals[2] - vals[1])
 
     def test_legend_attributes(self, long_df):
-
         kws = {"edgecolor": "r", "linewidth": 1}
         ax = self.func(data=long_df, x="x", y="y", hue="a", **kws)
         for pt in get_legend_handles(ax.get_legend()):
@@ -627,13 +601,11 @@ class SharedScatterTests(SharedAxesLevelTests):
             assert pt.get_markeredgewidth() == kws["linewidth"]
 
     def test_legend_disabled(self, long_df):
-
         ax = self.func(data=long_df, x="y", y="a", hue="b", legend=False)
         assert ax.legend_ is None
 
     def test_palette_from_color_deprecation(self, long_df):
-
-        color = (.9, .4, .5)
+        color = (0.9, 0.4, 0.5)
         hex_color = mpl.colors.to_hex(color)
 
         hue_var = "a"
@@ -657,7 +629,6 @@ class SharedScatterTests(SharedAxesLevelTests):
             assert same_color(strip.get_facecolor()[0], color)
 
     def test_log_scale(self):
-
         x = [1, 10, 100, 1000]
 
         ax = plt.figure().subplots()
@@ -681,7 +652,7 @@ class SharedScatterTests(SharedAxesLevelTests):
         ax.set_yscale("log")
         self.func(x=x, y=y, orient="h", native_scale=True)
         cat_points = ax.collections[0].get_offsets().copy()[:, 1]
-        assert np.ptp(np.log10(cat_points)) <= .8
+        assert np.ptp(np.log10(cat_points)) <= 0.8
 
     @pytest.mark.parametrize(
         "kwargs",
@@ -690,15 +661,14 @@ class SharedScatterTests(SharedAxesLevelTests):
             dict(data="wide", orient="h"),
             dict(data="long", x="x", color="C3"),
             dict(data="long", y="y", hue="a", jitter=False),
-            dict(data="long", x="a", y="y", hue="z", edgecolor="w", linewidth=.5),
-            dict(data="long", x="a", y="y", hue="z", edgecolor="auto", linewidth=.5),
+            dict(data="long", x="a", y="y", hue="z", edgecolor="w", linewidth=0.5),
+            dict(data="long", x="a", y="y", hue="z", edgecolor="auto", linewidth=0.5),
             dict(data="long", x="a_cat", y="y", hue="z"),
             dict(data="long", x="y", y="s", hue="c", orient="h", dodge=True),
             dict(data="long", x="s", y="y", hue="c", native_scale=True),
-        ]
+        ],
     )
     def test_vs_catplot(self, long_df, wide_df, kwargs):
-
         kwargs = kwargs.copy()
         if kwargs["data"] == "long":
             kwargs["data"] = long_df
@@ -725,9 +695,7 @@ class SharedScatterTests(SharedAxesLevelTests):
 
 
 class SharedAggTests(SharedAxesLevelTests):
-
     def test_labels_flat(self):
-
         ind = pd.Index(["a", "b", "c"], name="x")
         ser = pd.Series([1, 2, 3], ind, name="y")
 
@@ -744,14 +712,17 @@ class SharedAggTests(SharedAxesLevelTests):
 
 
 class SharedPatchArtistTests:
-
     @pytest.mark.parametrize("fill", [True, False])
     def test_legend_fill(self, long_df, fill):
-
         palette = color_palette()
         ax = self.func(
-            long_df, x="x", y="y", hue="a",
-            saturation=1, linecolor="k", fill=fill,
+            long_df,
+            x="x",
+            y="y",
+            hue="a",
+            saturation=1,
+            linecolor="k",
+            fill=fill,
         )
         for i, patch in enumerate(get_legend_handles(ax.get_legend())):
             fc = patch.get_facecolor()
@@ -764,18 +735,15 @@ class SharedPatchArtistTests:
                 assert same_color(ec, palette[i])
 
     def test_legend_attributes(self, long_df):
-
         ax = self.func(long_df, x="x", y="y", hue="a", linewidth=3)
         for patch in get_legend_handles(ax.get_legend()):
             assert patch.get_linewidth() == 3
 
 
 class TestStripPlot(SharedScatterTests):
-
     func = staticmethod(stripplot)
 
     def test_jitter_unfixed(self, long_df):
-
         ax1, ax2 = plt.figure().subplots(2)
         kws = dict(data=long_df, x="y", orient="h", native_scale=True)
 
@@ -792,10 +760,9 @@ class TestStripPlot(SharedScatterTests):
 
     @pytest.mark.parametrize(
         "orient,jitter",
-        itertools.product(["v", "h"], [True, .1]),
+        itertools.product(["v", "h"], [True, 0.1]),
     )
     def test_jitter(self, long_df, orient, jitter):
-
         cat_var, val_var = "a", "y"
         if orient == "x":
             x_var, y_var = cat_var, val_var
@@ -807,16 +774,18 @@ class TestStripPlot(SharedScatterTests):
         cat_vals = categorical_order(long_df[cat_var])
 
         ax = stripplot(
-            data=long_df, x=x_var, y=y_var, jitter=jitter,
+            data=long_df,
+            x=x_var,
+            y=y_var,
+            jitter=jitter,
         )
 
         if jitter is True:
-            jitter_range = .4
+            jitter_range = 0.4
         else:
             jitter_range = 2 * jitter
 
         for i, level in enumerate(cat_vals):
-
             vals = long_df.loc[long_df[cat_var] == level, val_var]
             points = ax.collections[i].get_offsets().T
             cat_points = points[cat_idx]
@@ -828,12 +797,10 @@ class TestStripPlot(SharedScatterTests):
 
 
 class TestSwarmPlot(SharedScatterTests):
-
     func = staticmethod(partial(swarmplot, warn_thresh=1))
 
 
 class TestBoxPlot(SharedAxesLevelTests, SharedPatchArtistTests):
-
     func = staticmethod(boxplot)
 
     @pytest.fixture
@@ -841,21 +808,18 @@ class TestBoxPlot(SharedAxesLevelTests, SharedPatchArtistTests):
         return {"saturation": 1}
 
     def get_last_color(self, ax):
-
         colors = [b.get_facecolor() for b in ax.containers[-1].boxes]
         unique_colors = np.unique(colors, axis=0)
         assert len(unique_colors) == 1
         return to_rgba(unique_colors.squeeze())
 
     def get_box_verts(self, box):
-
         path = box.get_path()
         visible_codes = [mpl.path.Path.MOVETO, mpl.path.Path.LINETO]
         visible = np.isin(path.codes, visible_codes)
         return path.vertices[visible].T
 
     def check_box(self, bxp, data, orient, pos, width=0.8):
-
         pos_idx, val_idx = self.orient_indices(orient)
 
         p25, p50, p75 = np.percentile(data, [25, 50, 75])
@@ -871,7 +835,6 @@ class TestBoxPlot(SharedAxesLevelTests, SharedPatchArtistTests):
         assert np.allclose(med[pos_idx], (pos - width / 2, pos + width / 2))
 
     def check_whiskers(self, bxp, data, orient, pos, capsize=0.4, whis=1.5):
-
         pos_idx, val_idx = self.orient_indices(orient)
 
         whis_lo = bxp.whiskers[0].get_xydata().T
@@ -904,7 +867,6 @@ class TestBoxPlot(SharedAxesLevelTests, SharedPatchArtistTests):
 
     @pytest.mark.parametrize("orient,col", [("x", "y"), ("y", "z")])
     def test_single_var(self, long_df, orient, col):
-
         var = {"x": "y", "y": "x"}[orient]
         ax = boxplot(long_df, **{var: col})
         bxp = ax.containers[0][0]
@@ -913,7 +875,6 @@ class TestBoxPlot(SharedAxesLevelTests, SharedPatchArtistTests):
 
     @pytest.mark.parametrize("orient,col", [(None, "x"), ("x", "y"), ("y", "z")])
     def test_vector_data(self, long_df, orient, col):
-
         ax = boxplot(long_df[col], orient=orient)
         orient = "x" if orient is None else orient
         bxp = ax.containers[0][0]
@@ -922,7 +883,6 @@ class TestBoxPlot(SharedAxesLevelTests, SharedPatchArtistTests):
 
     @pytest.mark.parametrize("orient", ["h", "v"])
     def test_wide_data(self, wide_df, orient):
-
         orient = {"h": "y", "v": "x"}[orient]
         ax = boxplot(wide_df, orient=orient, color="C0")
         for i, bxp in enumerate(ax.containers):
@@ -932,10 +892,9 @@ class TestBoxPlot(SharedAxesLevelTests, SharedPatchArtistTests):
 
     @pytest.mark.parametrize("orient", ["x", "y"])
     def test_grouped(self, long_df, orient):
-
         value = {"x": "y", "y": "x"}[orient]
         ax = boxplot(long_df, **{orient: "a", value: "z"})
-        bxp, = ax.containers
+        (bxp,) = ax.containers
         levels = categorical_order(long_df["a"])
         for i, level in enumerate(levels):
             data = long_df.loc[long_df["a"] == level, "z"]
@@ -944,7 +903,6 @@ class TestBoxPlot(SharedAxesLevelTests, SharedPatchArtistTests):
 
     @pytest.mark.parametrize("orient", ["x", "y"])
     def test_hue_grouped(self, long_df, orient):
-
         value = {"x": "y", "y": "x"}[orient]
         ax = boxplot(long_df, hue="c", **{orient: "a", value: "z"})
         for i, hue_level in enumerate(categorical_order(long_df["c"])):
@@ -952,13 +910,12 @@ class TestBoxPlot(SharedAxesLevelTests, SharedPatchArtistTests):
             for j, level in enumerate(categorical_order(long_df["a"])):
                 rows = (long_df["a"] == level) & (long_df["c"] == hue_level)
                 data = long_df.loc[rows, "z"]
-                pos = j + [-.2, +.2][i]
+                pos = j + [-0.2, +0.2][i]
                 width, capsize = 0.4, 0.2
                 self.check_box(bxp[j], data, orient, pos, width)
                 self.check_whiskers(bxp[j], data, orient, pos, capsize)
 
     def test_hue_not_dodged(self, long_df):
-
         levels = categorical_order(long_df["b"])
         hue = long_df["b"].isin(levels[:2])
         ax = boxplot(long_df, x="b", y="z", hue=hue)
@@ -970,7 +927,6 @@ class TestBoxPlot(SharedAxesLevelTests, SharedPatchArtistTests):
             self.check_whiskers(bxps[idx][i % 2], data, "x", i)
 
     def test_dodge_native_scale(self, long_df):
-
         centers = categorical_order(long_df["s"])
         hue_levels = categorical_order(long_df["c"])
         spacing = min(np.diff(centers))
@@ -987,7 +943,6 @@ class TestBoxPlot(SharedAxesLevelTests, SharedPatchArtistTests):
                 self.check_whiskers(bxp[j], data, "x", pos, width / 2)
 
     def test_dodge_native_scale_log(self, long_df):
-
         pos = 10 ** long_df["s"]
         ax = mpl.figure.Figure().subplots()
         ax.set_xscale("log")
@@ -1000,9 +955,8 @@ class TestBoxPlot(SharedAxesLevelTests, SharedPatchArtistTests):
         assert np.std(widths) == approx(0)
 
     def test_dodge_without_hue(self, long_df):
-
         ax = boxplot(long_df, x="a", y="y", dodge=True)
-        bxp, = ax.containers
+        (bxp,) = ax.containers
         levels = categorical_order(long_df["a"])
         for i, level in enumerate(levels):
             data = long_df.loc[long_df["a"] == level, "y"]
@@ -1011,7 +965,6 @@ class TestBoxPlot(SharedAxesLevelTests, SharedPatchArtistTests):
 
     @pytest.mark.parametrize("orient", ["x", "y"])
     def test_log_data_scale(self, long_df, orient):
-
         var = {"x": "y", "y": "x"}[orient]
         s = long_df["z"]
         ax = mpl.figure.Figure().subplots()
@@ -1022,33 +975,28 @@ class TestBoxPlot(SharedAxesLevelTests, SharedPatchArtistTests):
         self.check_whiskers(bxp, s, orient, 0, whis=np.inf)
 
     def test_color(self, long_df):
-
         color = "#123456"
         ax = boxplot(long_df, x="a", y="y", color=color, saturation=1)
         for box in ax.containers[0].boxes:
             assert same_color(box.get_facecolor(), color)
 
     def test_wide_data_multicolored(self, wide_df):
-
         ax = boxplot(wide_df)
         assert len(ax.containers) == wide_df.shape[1]
 
     def test_wide_data_single_color(self, wide_df):
-
         ax = boxplot(wide_df, color="C1", saturation=1)
         assert len(ax.containers) == 1
         for box in ax.containers[0].boxes:
             assert same_color(box.get_facecolor(), "C1")
 
     def test_hue_colors(self, long_df):
-
         ax = boxplot(long_df, x="a", y="y", hue="b", saturation=1)
         for i, bxp in enumerate(ax.containers):
             for box in bxp.boxes:
                 assert same_color(box.get_facecolor(), f"C{i}")
 
     def test_linecolor(self, long_df):
-
         color = "#778815"
         ax = boxplot(long_df, x="a", y="y", linecolor=color)
         bxp = ax.containers[0]
@@ -1060,19 +1008,16 @@ class TestBoxPlot(SharedAxesLevelTests, SharedPatchArtistTests):
             assert same_color(flier.get_markeredgecolor(), color)
 
     def test_linecolor_gray_warning(self, long_df):
-
-        with pytest.warns(FutureWarning, match="Use \"auto\" to set automatic"):
+        with pytest.warns(FutureWarning, match='Use "auto" to set automatic'):
             boxplot(long_df, x="y", linecolor="gray")
 
     def test_saturation(self, long_df):
-
         color = "#8912b0"
-        ax = boxplot(long_df["x"], color=color, saturation=.5)
+        ax = boxplot(long_df["x"], color=color, saturation=0.5)
         box = ax.containers[0].boxes[0]
         assert np.allclose(box.get_facecolor()[:3], desaturate(color, 0.5))
 
     def test_linewidth(self, long_df):
-
         width = 5
         ax = boxplot(long_df, x="a", y="y", linewidth=width)
         bxp = ax.containers[0]
@@ -1080,7 +1025,6 @@ class TestBoxPlot(SharedAxesLevelTests, SharedPatchArtistTests):
             assert line.get_linewidth() == width
 
     def test_fill(self, long_df):
-
         color = "#459900"
         ax = boxplot(x=long_df["z"], fill=False, color=color)
         bxp = ax.containers[0]
@@ -1090,32 +1034,28 @@ class TestBoxPlot(SharedAxesLevelTests, SharedPatchArtistTests):
 
     @pytest.mark.parametrize("notch_param", ["notch", "shownotches"])
     def test_notch(self, long_df, notch_param):
-
         ax = boxplot(x=long_df["z"], **{notch_param: True})
         verts = ax.containers[0].boxes[0].get_path().vertices
         assert len(verts) == 12
 
     def test_whis(self, long_df):
-
         data = long_df["z"]
         ax = boxplot(x=data, whis=2)
         bxp = ax.containers[0][0]
         self.check_whiskers(bxp, data, "y", 0, whis=2)
 
     def test_gap(self, long_df):
-
-        ax = boxplot(long_df, x="a", y="z", hue="c", gap=.1)
+        ax = boxplot(long_df, x="a", y="z", hue="c", gap=0.1)
         for i, hue_level in enumerate(categorical_order(long_df["c"])):
             bxp = ax.containers[i]
             for j, level in enumerate(categorical_order(long_df["a"])):
                 rows = (long_df["a"] == level) & (long_df["c"] == hue_level)
                 data = long_df.loc[rows, "z"]
-                pos = j + [-.2, +.2][i]
+                pos = j + [-0.2, +0.2][i]
                 width = 0.9 * 0.4
                 self.check_box(bxp[j], data, "x", pos, width)
 
     def test_prop_dicts(self, long_df):
-
         prop_dicts = dict(
             boxprops=dict(linewidth=3),
             medianprops=dict(color=".1"),
@@ -1133,7 +1073,6 @@ class TestBoxPlot(SharedAxesLevelTests, SharedPatchArtistTests):
                         assert plt.getp(artist, k) == v
 
     def test_showfliers(self, long_df):
-
         ax = boxplot(long_df["x"], showfliers=False)
         assert not ax.containers[0].fliers
 
@@ -1153,14 +1092,13 @@ class TestBoxPlot(SharedAxesLevelTests, SharedPatchArtistTests):
             dict(data="null", x="a", y="y", hue="a"),
             dict(data="long", x="s", y="y", hue="a", native_scale=True),
             dict(data="long", x="d", y="y", hue="a", native_scale=True),
-            dict(data="null", x="a", y="y", hue="b", fill=False, gap=.2),
+            dict(data="null", x="a", y="y", hue="b", fill=False, gap=0.2),
             dict(data="null", x="a", y="y", whis=1, showfliers=False),
             dict(data="null", x="a", y="y", linecolor="r", linewidth=5),
             dict(data="null", x="a", y="y", shownotches=True, showcaps=False),
-        ]
+        ],
     )
     def test_vs_catplot(self, long_df, wide_df, null_df, flat_series, kwargs):
-
         if kwargs["data"] == "long":
             kwargs["data"] = long_df
         elif kwargs["data"] == "wide":
@@ -1181,7 +1119,6 @@ class TestBoxPlot(SharedAxesLevelTests, SharedPatchArtistTests):
 
 
 class TestBoxenPlot(SharedAxesLevelTests, SharedPatchArtistTests):
-
     func = staticmethod(boxenplot)
 
     @pytest.fixture
@@ -1189,18 +1126,15 @@ class TestBoxenPlot(SharedAxesLevelTests, SharedPatchArtistTests):
         return {"saturation": 1}
 
     def get_last_color(self, ax):
-
         fcs = ax.collections[-2].get_facecolors()
         return to_rgba(fcs[len(fcs) // 2])
 
     def get_box_width(self, path, orient="x"):
-
         verts = path.vertices.T
         idx = ["y", "x"].index(orient)
         return np.ptp(verts[idx])
 
     def check_boxen(self, patches, data, orient, pos, width=0.8):
-
         pos_idx, val_idx = self.orient_indices(orient)
         verts = np.stack([v.vertices for v in patches.get_paths()], 1).T
 
@@ -1213,7 +1147,6 @@ class TestBoxenPlot(SharedAxesLevelTests, SharedPatchArtistTests):
 
     @pytest.mark.parametrize("orient,col", [("x", "y"), ("y", "z")])
     def test_single_var(self, long_df, orient, col):
-
         var = {"x": "y", "y": "x"}[orient]
         ax = boxenplot(long_df, **{var: col})
         patches = ax.collections[0]
@@ -1221,7 +1154,6 @@ class TestBoxenPlot(SharedAxesLevelTests, SharedPatchArtistTests):
 
     @pytest.mark.parametrize("orient,col", [(None, "x"), ("x", "y"), ("y", "z")])
     def test_vector_data(self, long_df, orient, col):
-
         orient = "x" if orient is None else orient
         ax = boxenplot(long_df[col], orient=orient)
         patches = ax.collections[0]
@@ -1229,7 +1161,6 @@ class TestBoxenPlot(SharedAxesLevelTests, SharedPatchArtistTests):
 
     @pytest.mark.parametrize("orient", ["h", "v"])
     def test_wide_data(self, wide_df, orient):
-
         orient = {"h": "y", "v": "x"}[orient]
         ax = boxenplot(wide_df, orient=orient)
         collections = ax.findobj(mpl.collections.PatchCollection)
@@ -1239,7 +1170,6 @@ class TestBoxenPlot(SharedAxesLevelTests, SharedPatchArtistTests):
 
     @pytest.mark.parametrize("orient", ["x", "y"])
     def test_grouped(self, long_df, orient):
-
         value = {"x": "y", "y": "x"}[orient]
         ax = boxenplot(long_df, **{orient: "a", value: "z"})
         levels = categorical_order(long_df["a"])
@@ -1250,7 +1180,6 @@ class TestBoxenPlot(SharedAxesLevelTests, SharedPatchArtistTests):
 
     @pytest.mark.parametrize("orient", ["x", "y"])
     def test_hue_grouped(self, long_df, orient):
-
         value = {"x": "y", "y": "x"}[orient]
         ax = boxenplot(long_df, hue="c", **{orient: "a", value: "z"})
         collections = iter(ax.findobj(mpl.collections.PatchCollection))
@@ -1258,12 +1187,11 @@ class TestBoxenPlot(SharedAxesLevelTests, SharedPatchArtistTests):
             for j, hue_level in enumerate(categorical_order(long_df["c"])):
                 rows = (long_df["a"] == level) & (long_df["c"] == hue_level)
                 data = long_df.loc[rows, "z"]
-                pos = i + [-.2, +.2][j]
+                pos = i + [-0.2, +0.2][j]
                 width = 0.4
                 self.check_boxen(next(collections), data, orient, pos, width)
 
     def test_dodge_native_scale(self, long_df):
-
         centers = categorical_order(long_df["s"])
         hue_levels = categorical_order(long_df["c"])
         spacing = min(np.diff(centers))
@@ -1279,7 +1207,6 @@ class TestBoxenPlot(SharedAxesLevelTests, SharedPatchArtistTests):
                 self.check_boxen(next(collections), data, "x", pos, width)
 
     def test_color(self, long_df):
-
         color = "#123456"
         ax = boxenplot(long_df, x="a", y="y", color=color, saturation=1)
         collections = ax.findobj(mpl.collections.PatchCollection)
@@ -1288,7 +1215,6 @@ class TestBoxenPlot(SharedAxesLevelTests, SharedPatchArtistTests):
             assert same_color(fcs[len(fcs) // 2], color)
 
     def test_hue_colors(self, long_df):
-
         ax = boxenplot(long_df, x="a", y="y", hue="b", saturation=1)
         n_levels = long_df["b"].nunique()
         collections = ax.findobj(mpl.collections.PatchCollection)
@@ -1297,31 +1223,27 @@ class TestBoxenPlot(SharedAxesLevelTests, SharedPatchArtistTests):
             assert same_color(fcs[len(fcs) // 2], f"C{i % n_levels}")
 
     def test_linecolor(self, long_df):
-
         color = "#669913"
         ax = boxenplot(long_df, x="a", y="y", linecolor=color)
         for patches in ax.findobj(mpl.collections.PatchCollection):
             assert same_color(patches.get_edgecolor(), color)
 
     def test_linewidth(self, long_df):
-
         width = 5
         ax = boxenplot(long_df, x="a", y="y", linewidth=width)
         for patches in ax.findobj(mpl.collections.PatchCollection):
             assert patches.get_linewidth() == width
 
     def test_saturation(self, long_df):
-
         color = "#8912b0"
-        ax = boxenplot(long_df["x"], color=color, saturation=.5)
+        ax = boxenplot(long_df["x"], color=color, saturation=0.5)
         fcs = ax.collections[0].get_facecolors()
         assert np.allclose(fcs[len(fcs) // 2, :3], desaturate(color, 0.5))
 
     def test_gap(self, long_df):
-
         ax1, ax2 = mpl.figure.Figure().subplots(2)
         boxenplot(long_df, x="a", y="y", hue="s", ax=ax1)
-        boxenplot(long_df, x="a", y="y", hue="s", gap=.2, ax=ax2)
+        boxenplot(long_df, x="a", y="y", hue="s", gap=0.2, ax=ax2)
         c1 = ax1.findobj(mpl.collections.PatchCollection)
         c2 = ax2.findobj(mpl.collections.PatchCollection)
         for p1, p2 in zip(c1, c2):
@@ -1330,19 +1252,16 @@ class TestBoxenPlot(SharedAxesLevelTests, SharedPatchArtistTests):
             assert (w2 / w1) == pytest.approx(0.8)
 
     def test_fill(self, long_df):
-
         ax = boxenplot(long_df, x="a", y="y", hue="s", fill=False)
         for c in ax.findobj(mpl.collections.PatchCollection):
             assert not c.get_facecolors().size
 
     def test_k_depth_int(self, rng):
-
         x = rng.normal(0, 1, 10_000)
         ax = boxenplot(x, k_depth=(k := 8))
         assert len(ax.collections[0].get_paths()) == (k * 2 - 1)
 
     def test_k_depth_full(self, rng):
-
         x = rng.normal(0, 1, 10_000)
         ax = boxenplot(x=x, k_depth="full")
         paths = ax.collections[0].get_paths()
@@ -1353,23 +1272,20 @@ class TestBoxenPlot(SharedAxesLevelTests, SharedPatchArtistTests):
         assert not ax.collections[1].get_offsets().size
 
     def test_trust_alpha(self, rng):
-
         x = rng.normal(0, 1, 10_000)
-        ax = boxenplot(x, k_depth="trustworthy", trust_alpha=.1)
-        boxenplot(x, k_depth="trustworthy", trust_alpha=.001, ax=ax)
+        ax = boxenplot(x, k_depth="trustworthy", trust_alpha=0.1)
+        boxenplot(x, k_depth="trustworthy", trust_alpha=0.001, ax=ax)
         cs = ax.findobj(mpl.collections.PatchCollection)
         assert len(cs[0].get_paths()) > len(cs[1].get_paths())
 
     def test_outlier_prop(self, rng):
-
         x = rng.normal(0, 1, 10_000)
-        ax = boxenplot(x, k_depth="proportion", outlier_prop=.001)
-        boxenplot(x, k_depth="proportion", outlier_prop=.1, ax=ax)
+        ax = boxenplot(x, k_depth="proportion", outlier_prop=0.001)
+        boxenplot(x, k_depth="proportion", outlier_prop=0.1, ax=ax)
         cs = ax.findobj(mpl.collections.PatchCollection)
         assert len(cs[0].get_paths()) > len(cs[1].get_paths())
 
     def test_exponential_width_method(self, rng):
-
         x = rng.normal(0, 1, 10_000)
         ax = boxenplot(x=x, width_method="exponential")
         c = ax.findobj(mpl.collections.PatchCollection)[0]
@@ -1377,7 +1293,6 @@ class TestBoxenPlot(SharedAxesLevelTests, SharedPatchArtistTests):
         assert (ws[1] / ws[0]) == pytest.approx(ws[2] / ws[1])
 
     def test_linear_width_method(self, rng):
-
         x = rng.normal(0, 1, 10_000)
         ax = boxenplot(x=x, width_method="linear")
         c = ax.findobj(mpl.collections.PatchCollection)[0]
@@ -1385,7 +1300,6 @@ class TestBoxenPlot(SharedAxesLevelTests, SharedPatchArtistTests):
         assert (ws[1] - ws[0]) == pytest.approx(ws[2] - ws[1])
 
     def test_area_width_method(self, rng):
-
         x = rng.uniform(0, 1, 10_000)
         ax = boxenplot(x=x, width_method="area", k_depth=2)
         ps = ax.findobj(mpl.collections.PatchCollection)[0].get_paths()
@@ -1393,26 +1307,22 @@ class TestBoxenPlot(SharedAxesLevelTests, SharedPatchArtistTests):
         assert np.greater(ws, 0.7).all()
 
     def test_box_kws(self, long_df):
-
         ax = boxenplot(long_df, x="a", y="y", box_kws={"linewidth": (lw := 7.1)})
         for c in ax.findobj(mpl.collections.PatchCollection):
             assert c.get_linewidths() == lw
 
     def test_line_kws(self, long_df):
-
         ax = boxenplot(long_df, x="a", y="y", line_kws={"linewidth": (lw := 6.2)})
         for line in ax.lines:
             assert line.get_linewidth() == lw
 
     def test_flier_kws(self, long_df):
-
         ax = boxenplot(long_df, x="a", y="y", flier_kws={"marker": (marker := "X")})
         expected = mpl.markers.MarkerStyle(marker).get_path().vertices
         for c in ax.findobj(mpl.collections.PathCollection):
             assert_array_equal(c.get_paths()[0].vertices, expected)
 
     def test_k_depth_checks(self, long_df):
-
         with pytest.raises(ValueError, match="The value for `k_depth`"):
             boxenplot(x=long_df["y"], k_depth="auto")
 
@@ -1420,12 +1330,10 @@ class TestBoxenPlot(SharedAxesLevelTests, SharedPatchArtistTests):
             boxenplot(x=long_df["y"], k_depth=(1, 2))
 
     def test_width_method_check(self, long_df):
-
         with pytest.raises(ValueError, match="The value for `width_method`"):
             boxenplot(x=long_df["y"], width_method="uniform")
 
     def test_scale_deprecation(self, long_df):
-
         with pytest.warns(FutureWarning, match="The `scale` parameter has been"):
             boxenplot(x=long_df["y"], scale="linear")
 
@@ -1445,19 +1353,18 @@ class TestBoxenPlot(SharedAxesLevelTests, SharedPatchArtistTests):
             dict(data="long", x="a", y="y", hue="b"),
             dict(data=None, x="s", y="y", hue="a"),
             dict(data="long", x="a", y="y", hue="s", showfliers=False),
-            dict(data="null", x="a", y="y", hue="a", saturation=.5),
+            dict(data="null", x="a", y="y", hue="a", saturation=0.5),
             dict(data="long", x="s", y="y", hue="a", native_scale=True),
             dict(data="long", x="d", y="y", hue="a", native_scale=True),
-            dict(data="null", x="a", y="y", hue="b", fill=False, gap=.2),
+            dict(data="null", x="a", y="y", hue="b", fill=False, gap=0.2),
             dict(data="null", x="a", y="y", linecolor="r", linewidth=5),
-            dict(data="long", x="a", y="y", k_depth="trustworthy", trust_alpha=.1),
-            dict(data="long", x="a", y="y", k_depth="proportion", outlier_prop=.1),
+            dict(data="long", x="a", y="y", k_depth="trustworthy", trust_alpha=0.1),
+            dict(data="long", x="a", y="y", k_depth="proportion", outlier_prop=0.1),
             dict(data="long", x="a", y="z", width_method="area"),
-            dict(data="long", x="a", y="z", box_kws={"alpha": .2}, alpha=.4)
-        ]
+            dict(data="long", x="a", y="z", box_kws={"alpha": 0.2}, alpha=0.4),
+        ],
     )
     def test_vs_catplot(self, long_df, wide_df, null_df, flat_series, kwargs):
-
         if kwargs["data"] == "long":
             kwargs["data"] = long_df
         elif kwargs["data"] == "wide":
@@ -1478,7 +1385,6 @@ class TestBoxenPlot(SharedAxesLevelTests, SharedPatchArtistTests):
 
 
 class TestViolinPlot(SharedAxesLevelTests, SharedPatchArtistTests):
-
     func = staticmethod(violinplot)
 
     @pytest.fixture
@@ -1486,17 +1392,14 @@ class TestViolinPlot(SharedAxesLevelTests, SharedPatchArtistTests):
         return {"saturation": 1}
 
     def get_last_color(self, ax):
-
         color = ax.collections[-1].get_facecolor()
         return to_rgba(color)
 
     def violin_width(self, poly, orient="x"):
-
         idx, _ = self.orient_indices(orient)
         return np.ptp(poly.get_paths()[0].vertices[:, idx])
 
     def check_violin(self, poly, data, orient, pos, width=0.8):
-
         pos_idx, val_idx = self.orient_indices(orient)
         verts = poly.get_paths()[0].vertices.T
 
@@ -1508,7 +1411,6 @@ class TestViolinPlot(SharedAxesLevelTests, SharedPatchArtistTests):
 
     @pytest.mark.parametrize("orient,col", [("x", "y"), ("y", "z")])
     def test_single_var(self, long_df, orient, col):
-
         var = {"x": "y", "y": "x"}[orient]
         ax = violinplot(long_df, **{var: col}, cut=0)
         poly = ax.collections[0]
@@ -1516,7 +1418,6 @@ class TestViolinPlot(SharedAxesLevelTests, SharedPatchArtistTests):
 
     @pytest.mark.parametrize("orient,col", [(None, "x"), ("x", "y"), ("y", "z")])
     def test_vector_data(self, long_df, orient, col):
-
         orient = "x" if orient is None else orient
         ax = violinplot(long_df[col], cut=0, orient=orient)
         poly = ax.collections[0]
@@ -1524,7 +1425,6 @@ class TestViolinPlot(SharedAxesLevelTests, SharedPatchArtistTests):
 
     @pytest.mark.parametrize("orient", ["h", "v"])
     def test_wide_data(self, wide_df, orient):
-
         orient = {"h": "y", "v": "x"}[orient]
         ax = violinplot(wide_df, cut=0, orient=orient)
         for i, poly in enumerate(ax.collections):
@@ -1533,7 +1433,6 @@ class TestViolinPlot(SharedAxesLevelTests, SharedPatchArtistTests):
 
     @pytest.mark.parametrize("orient", ["x", "y"])
     def test_grouped(self, long_df, orient):
-
         value = {"x": "y", "y": "x"}[orient]
         ax = violinplot(long_df, **{orient: "a", value: "z"}, cut=0)
         levels = categorical_order(long_df["a"])
@@ -1543,7 +1442,6 @@ class TestViolinPlot(SharedAxesLevelTests, SharedPatchArtistTests):
 
     @pytest.mark.parametrize("orient", ["x", "y"])
     def test_hue_grouped(self, long_df, orient):
-
         value = {"x": "y", "y": "x"}[orient]
         ax = violinplot(long_df, hue="c", **{orient: "a", value: "z"}, cut=0)
         polys = iter(ax.collections)
@@ -1551,12 +1449,11 @@ class TestViolinPlot(SharedAxesLevelTests, SharedPatchArtistTests):
             for j, hue_level in enumerate(categorical_order(long_df["c"])):
                 rows = (long_df["a"] == level) & (long_df["c"] == hue_level)
                 data = long_df.loc[rows, "z"]
-                pos = i + [-.2, +.2][j]
+                pos = i + [-0.2, +0.2][j]
                 width = 0.4
                 self.check_violin(next(polys), data, orient, pos, width)
 
     def test_hue_not_dodged(self, long_df):
-
         levels = categorical_order(long_df["b"])
         hue = long_df["b"].isin(levels[:2])
         ax = violinplot(long_df, x="b", y="z", hue=hue, cut=0)
@@ -1566,7 +1463,6 @@ class TestViolinPlot(SharedAxesLevelTests, SharedPatchArtistTests):
             self.check_violin(poly, data, "x", i)
 
     def test_dodge_native_scale(self, long_df):
-
         centers = categorical_order(long_df["s"])
         hue_levels = categorical_order(long_df["c"])
         spacing = min(np.diff(centers))
@@ -1583,7 +1479,6 @@ class TestViolinPlot(SharedAxesLevelTests, SharedPatchArtistTests):
                 self.check_violin(poly, data, "x", pos, width)
 
     def test_dodge_native_scale_log(self, long_df):
-
         pos = 10 ** long_df["s"]
         ax = mpl.figure.Figure().subplots()
         ax.set_xscale("log")
@@ -1598,14 +1493,12 @@ class TestViolinPlot(SharedAxesLevelTests, SharedPatchArtistTests):
         assert np.std(widths) == approx(0)
 
     def test_color(self, long_df):
-
         color = "#123456"
         ax = violinplot(long_df, x="a", y="y", color=color, saturation=1)
         for poly in ax.collections:
             assert same_color(poly.get_facecolor(), color)
 
     def test_hue_colors(self, long_df):
-
         ax = violinplot(long_df, x="a", y="y", hue="b", saturation=1)
         n_levels = long_df["b"].nunique()
         for i, poly in enumerate(ax.collections):
@@ -1613,7 +1506,6 @@ class TestViolinPlot(SharedAxesLevelTests, SharedPatchArtistTests):
 
     @pytest.mark.parametrize("inner", ["box", "quart", "stick", "point"])
     def test_linecolor(self, long_df, inner):
-
         color = "#669913"
         ax = violinplot(long_df, x="a", y="y", linecolor=color, inner=inner)
         for poly in ax.findobj(mpl.collections.PolyCollection):
@@ -1624,22 +1516,19 @@ class TestViolinPlot(SharedAxesLevelTests, SharedPatchArtistTests):
             assert same_color(line.get_color(), color)
 
     def test_linewidth(self, long_df):
-
         width = 5
         ax = violinplot(long_df, x="a", y="y", linewidth=width)
         poly = ax.collections[0]
         assert poly.get_linewidth() == width
 
     def test_saturation(self, long_df):
-
         color = "#8912b0"
-        ax = violinplot(long_df["x"], color=color, saturation=.5)
+        ax = violinplot(long_df["x"], color=color, saturation=0.5)
         poly = ax.collections[0]
         assert np.allclose(poly.get_facecolors()[0, :3], desaturate(color, 0.5))
 
     @pytest.mark.parametrize("inner", ["box", "quart", "stick", "point"])
     def test_fill(self, long_df, inner):
-
         color = "#459900"
         ax = violinplot(x=long_df["z"], fill=False, color=color, inner=inner)
         for poly in ax.findobj(mpl.collections.PolyCollection):
@@ -1652,7 +1541,6 @@ class TestViolinPlot(SharedAxesLevelTests, SharedPatchArtistTests):
 
     @pytest.mark.parametrize("orient", ["x", "y"])
     def test_inner_box(self, long_df, orient):
-
         pos_idx, val_idx = self.orient_indices(orient)
         ax = violinplot(long_df["y"], orient=orient)
         stats = mpl.cbook.boxplot_stats(long_df["y"])[0]
@@ -1673,7 +1561,6 @@ class TestViolinPlot(SharedAxesLevelTests, SharedPatchArtistTests):
 
     @pytest.mark.parametrize("orient", ["x", "y"])
     def test_inner_quartiles(self, long_df, orient):
-
         pos_idx, val_idx = self.orient_indices(orient)
         ax = violinplot(long_df["y"], orient=orient, inner="quart")
         quartiles = np.percentile(long_df["y"], [25, 50, 75])
@@ -1686,7 +1573,6 @@ class TestViolinPlot(SharedAxesLevelTests, SharedPatchArtistTests):
 
     @pytest.mark.parametrize("orient", ["x", "y"])
     def test_inner_stick(self, long_df, orient):
-
         pos_idx, val_idx = self.orient_indices(orient)
         ax = violinplot(long_df["y"], orient=orient, inner="stick")
         for i, pts in enumerate(ax.collections[1].get_segments()):
@@ -1696,7 +1582,6 @@ class TestViolinPlot(SharedAxesLevelTests, SharedPatchArtistTests):
 
     @pytest.mark.parametrize("orient", ["x", "y"])
     def test_inner_points(self, long_df, orient):
-
         pos_idx, val_idx = self.orient_indices(orient)
         ax = violinplot(long_df["y"], orient=orient, inner="points")
         points = ax.collections[1]
@@ -1705,31 +1590,28 @@ class TestViolinPlot(SharedAxesLevelTests, SharedPatchArtistTests):
             assert pt[pos_idx] == 0
 
     def test_split_single(self, long_df):
-
         ax = violinplot(long_df, x="a", y="z", split=True, cut=0)
         levels = categorical_order(long_df["a"])
         for i, level in enumerate(levels):
             data = long_df.loc[long_df["a"] == level, "z"]
             self.check_violin(ax.collections[i], data, "x", i)
             verts = ax.collections[i].get_paths()[0].vertices
-            assert np.isclose(verts[:, 0], i + .4).sum() >= 100
+            assert np.isclose(verts[:, 0], i + 0.4).sum() >= 100
 
     def test_split_multi(self, long_df):
-
         ax = violinplot(long_df, x="a", y="z", hue="c", split=True, cut=0)
         polys = iter(ax.collections)
         for i, level in enumerate(categorical_order(long_df["a"])):
             for j, hue_level in enumerate(categorical_order(long_df["c"])):
                 rows = (long_df["a"] == level) & (long_df["c"] == hue_level)
                 data = long_df.loc[rows, "z"]
-                pos = i + [-.2, +.2][j]
+                pos = i + [-0.2, +0.2][j]
                 poly = next(polys)
                 self.check_violin(poly, data, "x", pos, width=0.4)
                 verts = poly.get_paths()[0].vertices
                 assert np.isclose(verts[:, 0], i).sum() >= 100
 
     def test_density_norm_area(self, long_df):
-
         y = long_df["y"].to_numpy()
         ax = violinplot([y, y * 5], color="C0")
         widths = []
@@ -1738,7 +1620,6 @@ class TestViolinPlot(SharedAxesLevelTests, SharedPatchArtistTests):
         assert widths[0] / widths[1] == approx(5)
 
     def test_density_norm_count(self, long_df):
-
         y = long_df["y"].to_numpy()
         ax = violinplot([np.repeat(y, 3), y], density_norm="count", color="C0")
         widths = []
@@ -1747,13 +1628,11 @@ class TestViolinPlot(SharedAxesLevelTests, SharedPatchArtistTests):
         assert widths[0] / widths[1] == approx(3)
 
     def test_density_norm_width(self, long_df):
-
         ax = violinplot(long_df, x="a", y="y", density_norm="width")
         for poly in ax.collections:
             assert self.violin_width(poly) == approx(0.8)
 
     def test_common_norm(self, long_df):
-
         ax = violinplot(long_df, x="a", y="y", hue="c", common_norm=True)
         widths = []
         for poly in ax.collections:
@@ -1761,44 +1640,37 @@ class TestViolinPlot(SharedAxesLevelTests, SharedPatchArtistTests):
         assert sum(w > 0.3999 for w in widths) == 1
 
     def test_scale_deprecation(self, long_df):
-
         with pytest.warns(FutureWarning, match=r".+Pass `density_norm='count'`"):
             violinplot(long_df, x="a", y="y", hue="b", scale="count")
 
     def test_scale_hue_deprecation(self, long_df):
-
         with pytest.warns(FutureWarning, match=r".+Pass `common_norm=True`"):
             violinplot(long_df, x="a", y="y", hue="b", scale_hue=False)
 
     def test_bw_adjust(self, long_df):
-
-        ax = violinplot(long_df["y"], bw_adjust=.2)
+        ax = violinplot(long_df["y"], bw_adjust=0.2)
         violinplot(long_df["y"], bw_adjust=2)
         kde1 = ax.collections[0].get_paths()[0].vertices[:100, 0]
         kde2 = ax.collections[1].get_paths()[0].vertices[:100, 0]
         assert np.std(np.diff(kde1)) > np.std(np.diff(kde2))
 
     def test_bw_deprecation(self, long_df):
-
         with pytest.warns(FutureWarning, match=r".*Setting `bw_method='silverman'`"):
             violinplot(long_df["y"], bw="silverman")
 
     def test_gap(self, long_df):
-
-        ax = violinplot(long_df, y="y", hue="c", gap=.2)
+        ax = violinplot(long_df, y="y", hue="c", gap=0.2)
         a = ax.collections[0].get_paths()[0].vertices[:, 0].max()
         b = ax.collections[1].get_paths()[0].vertices[:, 0].min()
         assert (b - a) == approx(0.2 * 0.8 / 2)
 
     def test_inner_kws(self, long_df):
-
         kws = {"linewidth": 3}
         ax = violinplot(long_df, x="a", y="y", inner="stick", inner_kws=kws)
         for line in ax.lines:
             assert line.get_linewidth() == kws["linewidth"]
 
     def test_box_inner_kws(self, long_df):
-
         kws = {"box_width": 10, "whis_width": 2, "marker": "x"}
         ax = violinplot(long_df, x="a", y="y", inner_kws=kws)
         for line in ax.lines[::3]:
@@ -1824,17 +1696,16 @@ class TestViolinPlot(SharedAxesLevelTests, SharedPatchArtistTests):
             dict(data="null", x="a", y="y", hue="a"),
             dict(data="long", x="s", y="y", hue="a", native_scale=True),
             dict(data="long", x="d", y="y", hue="a", native_scale=True),
-            dict(data="null", x="a", y="y", hue="b", fill=False, gap=.2),
+            dict(data="null", x="a", y="y", hue="b", fill=False, gap=0.2),
             dict(data="null", x="a", y="y", linecolor="r", linewidth=5),
             dict(data="long", x="a", y="y", inner="stick"),
             dict(data="long", x="a", y="y", inner="points"),
             dict(data="long", x="a", y="y", hue="b", inner="quartiles", split=True),
             dict(data="long", x="a", y="y", density_norm="count", common_norm=True),
             dict(data="long", x="a", y="y", bw_adjust=2),
-        ]
+        ],
     )
     def test_vs_catplot(self, long_df, wide_df, null_df, flat_series, kwargs):
-
         if kwargs["data"] == "long":
             kwargs["data"] = long_df
         elif kwargs["data"] == "wide":
@@ -1855,7 +1726,6 @@ class TestViolinPlot(SharedAxesLevelTests, SharedPatchArtistTests):
 
 
 class TestBarPlot(SharedAggTests):
-
     func = staticmethod(barplot)
 
     @pytest.fixture
@@ -1863,7 +1733,6 @@ class TestBarPlot(SharedAggTests):
         return {"saturation": 1}
 
     def get_last_color(self, ax):
-
         colors = [p.get_facecolor() for p in ax.containers[-1]]
         unique_colors = np.unique(colors, axis=0)
         assert len(unique_colors) == 1
@@ -1871,16 +1740,14 @@ class TestBarPlot(SharedAggTests):
 
     @pytest.mark.parametrize("orient", ["x", "y"])
     def test_single_var(self, orient):
-
         vals = pd.Series([1, 3, 10])
         ax = barplot(**{orient: vals})
-        bar, = ax.patches
+        (bar,) = ax.patches
         prop = {"x": "width", "y": "height"}[orient]
         assert getattr(bar, f"get_{prop}")() == approx(vals.mean())
 
     @pytest.mark.parametrize("orient", ["x", "y", "h", "v"])
     def test_wide_df(self, wide_df, orient):
-
         ax = barplot(wide_df, orient=orient)
         orient = {"h": "y", "v": "x"}.get(orient, orient)
         prop = {"x": "height", "y": "width"}[orient]
@@ -1889,7 +1756,6 @@ class TestBarPlot(SharedAggTests):
 
     @pytest.mark.parametrize("orient", ["x", "y", "h", "v"])
     def test_vector_orient(self, orient):
-
         keys, vals = ["a", "b", "c"], [1, 2, 3]
         data = dict(zip(keys, vals))
         orient = {"h": "y", "v": "x"}.get(orient, orient)
@@ -1900,7 +1766,6 @@ class TestBarPlot(SharedAggTests):
             assert getattr(bar, f"get_{prop}")() == approx(vals[i])
 
     def test_xy_vertical(self):
-
         x, y = ["a", "b", "c"], [1, 3, 2.5]
 
         ax = barplot(x=x, y=y)
@@ -1911,7 +1776,6 @@ class TestBarPlot(SharedAggTests):
             assert bar.get_width() == approx(0.8)
 
     def test_xy_horizontal(self):
-
         x, y = [1, 3, 2.5], ["a", "b", "c"]
 
         ax = barplot(x=x, y=y)
@@ -1922,7 +1786,6 @@ class TestBarPlot(SharedAggTests):
             assert bar.get_width() == approx(x[i])
 
     def test_xy_with_na_grouper(self):
-
         x, y = ["a", None, "b"], [1, 2, 3]
         ax = barplot(x=x, y=y)
         _draw_figure(ax.figure)  # For matplotlib<3.5
@@ -1932,7 +1795,6 @@ class TestBarPlot(SharedAggTests):
         assert ax.patches[1].get_height() == 3
 
     def test_xy_with_na_value(self):
-
         x, y = ["a", "b", "c"], [1, None, 3]
         ax = barplot(x=x, y=y)
         _draw_figure(ax.figure)  # For matplotlib<3.5
@@ -1942,7 +1804,6 @@ class TestBarPlot(SharedAggTests):
         assert ax.patches[1].get_height() == 3
 
     def test_hue_redundant(self):
-
         x, y = ["a", "b", "c"], [1, 2, 3]
 
         ax = barplot(x=x, y=y, hue=x, saturation=1)
@@ -1954,7 +1815,6 @@ class TestBarPlot(SharedAggTests):
             assert same_color(bar.get_facecolor(), f"C{i}")
 
     def test_hue_matched(self):
-
         x, y = ["a", "b", "c"], [1, 2, 3]
         hue = ["x", "x", "y"]
 
@@ -1967,7 +1827,6 @@ class TestBarPlot(SharedAggTests):
             assert same_color(bar.get_facecolor(), f"C{i // 2}")
 
     def test_hue_matched_by_name(self):
-
         data = {"x": ["a", "b", "c"], "y": [1, 2, 3]}
         ax = barplot(data, x="x", y="y", hue="x", saturation=1)
         for i, bar in enumerate(ax.patches):
@@ -1978,7 +1837,6 @@ class TestBarPlot(SharedAggTests):
             assert same_color(bar.get_facecolor(), f"C{i}")
 
     def test_hue_dodged(self):
-
         x = ["a", "b", "a", "b"]
         y = [1, 2, 3, 4]
         hue = ["x", "x", "y", "y"]
@@ -1986,27 +1844,22 @@ class TestBarPlot(SharedAggTests):
         ax = barplot(x=x, y=y, hue=hue, saturation=1, legend=False)
         for i, bar in enumerate(ax.patches):
             sign = 1 if i // 2 else -1
-            assert (
-                bar.get_x() + bar.get_width() / 2
-                == approx(i % 2 + sign * 0.8 / 4)
-            )
+            assert bar.get_x() + bar.get_width() / 2 == approx(i % 2 + sign * 0.8 / 4)
             assert bar.get_y() == 0
             assert bar.get_height() == y[i]
             assert bar.get_width() == approx(0.8 / 2)
             assert same_color(bar.get_facecolor(), f"C{i // 2}")
 
     def test_gap(self):
-
         x = ["a", "b", "a", "b"]
         y = [1, 2, 3, 4]
         hue = ["x", "x", "y", "y"]
 
-        ax = barplot(x=x, y=y, hue=hue, gap=.25, legend=False)
+        ax = barplot(x=x, y=y, hue=hue, gap=0.25, legend=False)
         for i, bar in enumerate(ax.patches):
-            assert bar.get_width() == approx(0.8 / 2 * .75)
+            assert bar.get_width() == approx(0.8 / 2 * 0.75)
 
     def test_hue_undodged(self):
-
         x = ["a", "b", "a", "b"]
         y = [1, 2, 3, 4]
         hue = ["x", "x", "y", "y"]
@@ -2020,7 +1873,6 @@ class TestBarPlot(SharedAggTests):
             assert same_color(bar.get_facecolor(), f"C{i // 2}")
 
     def test_hue_order(self):
-
         x, y = ["a", "b", "c"], [1, 2, 3]
         hue_order = ["c", "b", "a"]
 
@@ -2030,7 +1882,6 @@ class TestBarPlot(SharedAggTests):
             assert bar.get_x() + bar.get_width() / 2 == approx(2 - i)
 
     def test_hue_norm(self):
-
         x, y = [1, 2, 3, 4], [1, 2, 3, 4]
 
         ax = barplot(x=x, y=y, hue=x, hue_norm=(2, 3))
@@ -2040,7 +1891,6 @@ class TestBarPlot(SharedAggTests):
         assert colors[2] == colors[3]
 
     def test_fill(self):
-
         x = ["a", "b", "a", "b"]
         y = [1, 2, 3, 4]
         hue = ["x", "x", "y", "y"]
@@ -2051,7 +1901,6 @@ class TestBarPlot(SharedAggTests):
             assert same_color(bar.get_facecolor(), (0, 0, 0, 0))
 
     def test_xy_native_scale(self):
-
         x, y = [2, 4, 8], [1, 2, 3]
 
         ax = barplot(x=x, y=y, native_scale=True)
@@ -2062,7 +1911,6 @@ class TestBarPlot(SharedAggTests):
             assert bar.get_width() == approx(0.8 * 2)
 
     def test_xy_native_scale_log_transform(self):
-
         x, y = [1, 10, 100], [1, 2, 3]
 
         ax = mpl.figure.Figure().subplots()
@@ -2077,8 +1925,7 @@ class TestBarPlot(SharedAggTests):
         assert ax.patches[1].get_width() > ax.patches[0].get_width()
 
     def test_datetime_native_scale_axis(self):
-
-        x = pd.date_range("2010-01-01", periods=20, freq="ME")
+        x = pd.date_range("2010-01-01", periods=20, freq="M")
         y = np.arange(20)
         ax = barplot(x=x, y=y, native_scale=True)
         assert "Date" in ax.xaxis.get_major_locator().__class__.__name__
@@ -2086,7 +1933,6 @@ class TestBarPlot(SharedAggTests):
         assert_array_equal(ax.xaxis.convert_units([day]), mpl.dates.date2num([day]))
 
     def test_native_scale_dodged(self):
-
         x, y = [2, 4, 2, 4], [1, 2, 3, 4]
         hue = ["x", "x", "y", "y"]
 
@@ -2098,7 +1944,6 @@ class TestBarPlot(SharedAggTests):
             assert bar.get_x() == approx(x_i)
 
     def test_native_scale_log_transform_dodged(self):
-
         x, y = [1, 100, 1, 100], [1, 2, 3, 4]
         hue = ["x", "x", "y", "y"]
 
@@ -2112,7 +1957,6 @@ class TestBarPlot(SharedAggTests):
             assert bar.get_x() == approx(x_i)
 
     def test_estimate_default(self, long_df):
-
         agg_var, val_var = "a", "y"
         agg_df = long_df.groupby(agg_var)[val_var].mean()
 
@@ -2122,7 +1966,6 @@ class TestBarPlot(SharedAggTests):
             assert bar.get_height() == approx(agg_df[order[i]])
 
     def test_estimate_string(self, long_df):
-
         agg_var, val_var = "a", "y"
         agg_df = long_df.groupby(agg_var)[val_var].median()
 
@@ -2132,7 +1975,6 @@ class TestBarPlot(SharedAggTests):
             assert bar.get_height() == approx(agg_df[order[i]])
 
     def test_estimate_func(self, long_df):
-
         agg_var, val_var = "a", "y"
         agg_df = long_df.groupby(agg_var)[val_var].median()
 
@@ -2142,22 +1984,19 @@ class TestBarPlot(SharedAggTests):
             assert bar.get_height() == approx(agg_df[order[i]])
 
     def test_weighted_estimate(self, long_df):
-
         ax = barplot(long_df, y="y", weights="x")
         height = ax.patches[0].get_height()
         expected = np.average(long_df["y"], weights=long_df["x"])
         assert height == expected
 
     def test_estimate_log_transform(self, long_df):
-
         ax = mpl.figure.Figure().subplots()
         ax.set_xscale("log")
         barplot(x=long_df["z"], ax=ax)
-        bar, = ax.patches
+        (bar,) = ax.patches
         assert bar.get_width() == 10 ** np.log10(long_df["z"]).mean()
 
     def test_errorbars(self, long_df):
-
         agg_var, val_var = "a", "y"
         agg_df = long_df.groupby(agg_var)[val_var].agg(["mean", "std"])
 
@@ -2170,8 +2009,7 @@ class TestBarPlot(SharedAggTests):
             assert hi == approx(row["mean"] + row["std"])
 
     def test_width(self):
-
-        width = .5
+        width = 0.5
         x, y = ["a", "b", "c"], [1, 2, 3]
         ax = barplot(x=x, y=y, width=width)
         for i, bar in enumerate(ax.patches):
@@ -2179,30 +2017,26 @@ class TestBarPlot(SharedAggTests):
             assert bar.get_width() == width
 
     def test_width_native_scale(self):
-
-        width = .5
+        width = 0.5
         x, y = [4, 6, 10], [1, 2, 3]
         ax = barplot(x=x, y=y, width=width, native_scale=True)
         for bar in ax.patches:
             assert bar.get_width() == (width * 2)
 
     def test_width_spaced_categories(self):
-
         ax = barplot(x=["a", "b", "c"], y=[4, 5, 6])
         barplot(x=["a", "c"], y=[1, 3], ax=ax)
         for bar in ax.patches:
             assert bar.get_width() == pytest.approx(0.8)
 
     def test_saturation_color(self):
-
-        color = (.1, .9, .2)
+        color = (0.1, 0.9, 0.2)
         x, y = ["a", "b", "c"], [1, 2, 3]
         ax = barplot(x=x, y=y)
         for bar in ax.patches:
             assert np.var(bar.get_facecolor()[:3]) < np.var(color)
 
     def test_saturation_palette(self):
-
         palette = color_palette("viridis", 3)
         x, y = ["a", "b", "c"], [1, 2, 3]
         ax = barplot(x=x, y=y, hue=x, palette=palette)
@@ -2210,26 +2044,22 @@ class TestBarPlot(SharedAggTests):
             assert np.var(bar.get_facecolor()[:3]) < np.var(palette[i])
 
     def test_legend_numeric_auto(self, long_df):
-
         ax = barplot(long_df, x="x", y="y", hue="x")
         assert len(ax.get_legend().texts) <= 6
 
     def test_legend_numeric_full(self, long_df):
-
         ax = barplot(long_df, x="x", y="y", hue="x", legend="full")
         labels = [t.get_text() for t in ax.get_legend().texts]
         levels = [str(x) for x in sorted(long_df["x"].unique())]
         assert labels == levels
 
     def test_legend_disabled(self, long_df):
-
         ax = barplot(long_df, x="x", y="y", hue="b", legend=False)
         assert ax.get_legend() is None
 
     def test_error_caps(self):
-
         x, y = ["a", "b", "c"] * 2, [1, 2, 3, 4, 5, 6]
-        ax = barplot(x=x, y=y, capsize=.8, errorbar="pi")
+        ax = barplot(x=x, y=y, capsize=0.8, errorbar="pi")
 
         assert len(ax.patches) == len(ax.lines)
         for bar, error in zip(ax.patches, ax.lines):
@@ -2239,9 +2069,8 @@ class TestBarPlot(SharedAggTests):
             assert np.nanmax(pos) == approx(bar.get_x() + bar.get_width())
 
     def test_error_caps_native_scale(self):
-
         x, y = [2, 4, 20] * 2, [1, 2, 3, 4, 5, 6]
-        ax = barplot(x=x, y=y, capsize=.8, native_scale=True, errorbar="pi")
+        ax = barplot(x=x, y=y, capsize=0.8, native_scale=True, errorbar="pi")
 
         assert len(ax.patches) == len(ax.lines)
         for bar, error in zip(ax.patches, ax.lines):
@@ -2251,11 +2080,10 @@ class TestBarPlot(SharedAggTests):
             assert np.nanmax(pos) == approx(bar.get_x() + bar.get_width())
 
     def test_error_caps_native_scale_log_transform(self):
-
         x, y = [1, 10, 1000] * 2, [1, 2, 3, 4, 5, 6]
         ax = mpl.figure.Figure().subplots()
         ax.set_xscale("log")
-        barplot(x=x, y=y, capsize=.8, native_scale=True, errorbar="pi", ax=ax)
+        barplot(x=x, y=y, capsize=0.8, native_scale=True, errorbar="pi", ax=ax)
 
         assert len(ax.patches) == len(ax.lines)
         for bar, error in zip(ax.patches, ax.lines):
@@ -2265,9 +2093,8 @@ class TestBarPlot(SharedAggTests):
             assert np.nanmax(pos) == approx(bar.get_x() + bar.get_width())
 
     def test_bar_kwargs(self):
-
         x, y = ["a", "b", "c"], [1, 2, 3]
-        kwargs = dict(linewidth=3, facecolor=(.5, .4, .3, .2), rasterized=True)
+        kwargs = dict(linewidth=3, facecolor=(0.5, 0.4, 0.3, 0.2), rasterized=True)
         ax = barplot(x=x, y=y, **kwargs)
         for bar in ax.patches:
             assert bar.get_linewidth() == kwargs["linewidth"]
@@ -2275,7 +2102,6 @@ class TestBarPlot(SharedAggTests):
             assert bar.get_rasterized() == kwargs["rasterized"]
 
     def test_legend_attributes(self, long_df):
-
         palette = color_palette()
         ax = barplot(
             long_df, x="a", y="y", hue="c", saturation=1, edgecolor="k", linewidth=3
@@ -2286,7 +2112,6 @@ class TestBarPlot(SharedAggTests):
             assert patch.get_linewidth() == 3
 
     def test_legend_unfilled(self, long_df):
-
         palette = color_palette()
         ax = barplot(long_df, x="a", y="y", hue="c", fill=False, linewidth=3)
         for i, patch in enumerate(get_legend_handles(ax.get_legend())):
@@ -2296,9 +2121,8 @@ class TestBarPlot(SharedAggTests):
 
     @pytest.mark.parametrize("fill", [True, False])
     def test_err_kws(self, fill):
-
         x, y = ["a", "b", "c"], [1, 2, 3]
-        err_kws = dict(color=(1, 1, .5, .5), linewidth=5)
+        err_kws = dict(color=(1, 1, 0.5, 0.5), linewidth=5)
         ax = barplot(x=x, y=y, fill=fill, err_kws=err_kws)
         for line in ax.lines:
             assert line.get_color() == err_kws["color"]
@@ -2318,17 +2142,16 @@ class TestBarPlot(SharedAggTests):
             dict(data=None, x="s", y="y", hue="a"),
             dict(data="long", x="a", y="y", hue="s"),
             dict(data="long", x="a", y="y", units="c"),
-            dict(data="null", x="a", y="y", hue="a", gap=.1, fill=False),
+            dict(data="null", x="a", y="y", hue="a", gap=0.1, fill=False),
             dict(data="long", x="s", y="y", hue="a", native_scale=True),
             dict(data="long", x="d", y="y", hue="a", native_scale=True),
             dict(data="long", x="a", y="y", errorbar=("pi", 50)),
             dict(data="long", x="a", y="y", errorbar=None),
-            dict(data="long", x="a", y="y", capsize=.3, err_kws=dict(c="k")),
-            dict(data="long", x="a", y="y", color="blue", edgecolor="green", alpha=.5),
-        ]
+            dict(data="long", x="a", y="y", capsize=0.3, err_kws=dict(c="k")),
+            dict(data="long", x="a", y="y", color="blue", edgecolor="green", alpha=0.5),
+        ],
     )
     def test_vs_catplot(self, long_df, wide_df, null_df, flat_series, kwargs):
-
         kwargs = kwargs.copy()
         kwargs["seed"] = 0
         kwargs["n_boot"] = 10
@@ -2352,7 +2175,6 @@ class TestBarPlot(SharedAggTests):
         assert_plots_equal(ax, g.ax)
 
     def test_errwidth_deprecation(self):
-
         x, y = ["a", "b", "c"], [1, 2, 3]
         val = 5
         with pytest.warns(FutureWarning, match="\n\nThe `errwidth` parameter"):
@@ -2361,16 +2183,14 @@ class TestBarPlot(SharedAggTests):
             assert line.get_linewidth() == val
 
     def test_errcolor_deprecation(self):
-
         x, y = ["a", "b", "c"], [1, 2, 3]
-        val = (1, .7, .4, .8)
+        val = (1, 0.7, 0.4, 0.8)
         with pytest.warns(FutureWarning, match="\n\nThe `errcolor` parameter"):
             ax = barplot(x=x, y=y, errcolor=val)
         for line in ax.lines:
             assert line.get_color() == val
 
     def test_capsize_as_none_deprecation(self):
-
         x, y = ["a", "b", "c"], [1, 2, 3]
         with pytest.warns(FutureWarning, match="\n\nPassing `capsize=None`"):
             ax = barplot(x=x, y=y, capsize=None)
@@ -2378,7 +2198,6 @@ class TestBarPlot(SharedAggTests):
             assert len(line.get_xdata()) == 2
 
     def test_hue_implied_by_palette_deprecation(self):
-
         x = ["a", "b", "c"]
         y = [1, 2, 3]
         palette = "Set1"
@@ -2391,17 +2210,14 @@ class TestBarPlot(SharedAggTests):
 
 
 class TestPointPlot(SharedAggTests):
-
     func = staticmethod(pointplot)
 
     def get_last_color(self, ax):
-
         color = ax.lines[-1].get_color()
         return to_rgba(color)
 
     @pytest.mark.parametrize("orient", ["x", "y"])
     def test_single_var(self, orient):
-
         vals = pd.Series([1, 3, 10])
         ax = pointplot(**{orient: vals})
         line = ax.lines[0]
@@ -2409,7 +2225,6 @@ class TestPointPlot(SharedAggTests):
 
     @pytest.mark.parametrize("orient", ["x", "y", "h", "v"])
     def test_wide_df(self, wide_df, orient):
-
         ax = pointplot(wide_df, orient=orient)
         orient = {"h": "y", "v": "x"}.get(orient, orient)
         depend = {"x": "y", "y": "x"}[orient]
@@ -2425,7 +2240,6 @@ class TestPointPlot(SharedAggTests):
 
     @pytest.mark.parametrize("orient", ["x", "y", "h", "v"])
     def test_vector_orient(self, orient):
-
         keys, vals = ["a", "b", "c"], [1, 2, 3]
         data = dict(zip(keys, vals))
         orient = {"h": "y", "v": "x"}.get(orient, orient)
@@ -2439,21 +2253,18 @@ class TestPointPlot(SharedAggTests):
         assert_array_equal(getattr(line, f"get_{depend}data")(), vals)
 
     def test_xy_vertical(self):
-
         x, y = ["a", "b", "c"], [1, 3, 2.5]
         ax = pointplot(x=x, y=y)
         for i, xy in enumerate(ax.lines[0].get_xydata()):
             assert tuple(xy) == (i, y[i])
 
     def test_xy_horizontal(self):
-
         x, y = [1, 3, 2.5], ["a", "b", "c"]
         ax = pointplot(x=x, y=y)
         for i, xy in enumerate(ax.lines[0].get_xydata()):
             assert tuple(xy) == (x[i], i)
 
     def test_xy_with_na_grouper(self):
-
         x, y = ["a", None, "b"], [1, 2, 3]
         ax = pointplot(x=x, y=y)
         _draw_figure(ax.figure)  # For matplotlib<3.5
@@ -2463,7 +2274,6 @@ class TestPointPlot(SharedAggTests):
         assert_array_equal(ax.lines[0].get_ydata(), [1, 3])
 
     def test_xy_with_na_value(self):
-
         x, y = ["a", "b", "c"], [1, np.nan, 3]
         ax = pointplot(x=x, y=y)
         _draw_figure(ax.figure)  # For matplotlib<3.5
@@ -2473,7 +2283,6 @@ class TestPointPlot(SharedAggTests):
         assert_array_equal(ax.lines[0].get_ydata(), y)
 
     def test_hue(self):
-
         x, y = ["a", "a", "b", "b"], [1, 2, 3, 4]
         hue = ["x", "y", "x", "y"]
         ax = pointplot(x=x, y=y, hue=hue, errorbar=None)
@@ -2482,12 +2291,10 @@ class TestPointPlot(SharedAggTests):
             assert same_color(line.get_color(), f"C{i}")
 
     def test_wide_data_is_joined(self, wide_df):
-
         ax = pointplot(wide_df, errorbar=None)
         assert len(ax.lines) == 1
 
     def test_xy_native_scale(self):
-
         x, y = [2, 4, 8], [1, 2, 3]
 
         ax = pointplot(x=x, y=y, native_scale=True)
@@ -2498,7 +2305,6 @@ class TestPointPlot(SharedAggTests):
     # Use lambda around np.mean to avoid uninformative pandas deprecation warning
     @pytest.mark.parametrize("estimator", ["mean", lambda x: np.mean(x)])
     def test_estimate(self, long_df, estimator):
-
         agg_var, val_var = "a", "y"
         agg_df = long_df.groupby(agg_var)[val_var].agg(estimator)
 
@@ -2508,22 +2314,19 @@ class TestPointPlot(SharedAggTests):
             assert tuple(xy) == approx((i, agg_df[order[i]]))
 
     def test_weighted_estimate(self, long_df):
-
         ax = pointplot(long_df, y="y", weights="x")
         val = ax.lines[0].get_ydata().item()
         expected = np.average(long_df["y"], weights=long_df["x"])
         assert val == expected
 
     def test_estimate_log_transform(self, long_df):
-
         ax = mpl.figure.Figure().subplots()
         ax.set_xscale("log")
         pointplot(x=long_df["z"], ax=ax)
-        val, = ax.lines[0].get_xdata()
+        (val,) = ax.lines[0].get_xdata()
         assert val == 10 ** np.log10(long_df["z"]).mean()
 
     def test_errorbars(self, long_df):
-
         agg_var, val_var = "a", "y"
         agg_df = long_df.groupby(agg_var)[val_var].agg(["mean", "std"])
 
@@ -2536,7 +2339,6 @@ class TestPointPlot(SharedAggTests):
             assert hi == approx(row["mean"] + row["std"])
 
     def test_marker_linestyle(self):
-
         x, y = ["a", "b", "c"], [1, 2, 3]
         ax = pointplot(x=x, y=y, marker="s", linestyle="--")
         line = ax.lines[0]
@@ -2544,7 +2346,6 @@ class TestPointPlot(SharedAggTests):
         assert line.get_linestyle() == "--"
 
     def test_markers_linestyles_single(self):
-
         x, y = ["a", "b", "c"], [1, 2, 3]
         ax = pointplot(x=x, y=y, markers="s", linestyles="--")
         line = ax.lines[0]
@@ -2552,14 +2353,16 @@ class TestPointPlot(SharedAggTests):
         assert line.get_linestyle() == "--"
 
     def test_markers_linestyles_mapped(self):
-
         x, y = ["a", "a", "b", "b"], [1, 2, 3, 4]
         hue = ["x", "y", "x", "y"]
         markers = ["d", "s"]
         linestyles = ["--", ":"]
         ax = pointplot(
-            x=x, y=y, hue=hue,
-            markers=markers, linestyles=linestyles,
+            x=x,
+            y=y,
+            hue=hue,
+            markers=markers,
+            linestyles=linestyles,
             errorbar=None,
         )
         for i, line in enumerate(ax.lines[:2]):
@@ -2567,61 +2370,54 @@ class TestPointPlot(SharedAggTests):
             assert line.get_linestyle() == linestyles[i]
 
     def test_dodge_boolean(self):
-
         x, y = ["a", "b", "a", "b"], [1, 2, 3, 4]
         hue = ["x", "x", "y", "y"]
         ax = pointplot(x=x, y=y, hue=hue, dodge=True, errorbar=None)
         for i, xy in enumerate(ax.lines[0].get_xydata()):
-            assert tuple(xy) == (i - .025, y[i])
+            assert tuple(xy) == (i - 0.025, y[i])
         for i, xy in enumerate(ax.lines[1].get_xydata()):
-            assert tuple(xy) == (i + .025, y[2 + i])
+            assert tuple(xy) == (i + 0.025, y[2 + i])
 
     def test_dodge_float(self):
-
         x, y = ["a", "b", "a", "b"], [1, 2, 3, 4]
         hue = ["x", "x", "y", "y"]
-        ax = pointplot(x=x, y=y, hue=hue, dodge=.2, errorbar=None)
+        ax = pointplot(x=x, y=y, hue=hue, dodge=0.2, errorbar=None)
         for i, xy in enumerate(ax.lines[0].get_xydata()):
-            assert tuple(xy) == (i - .1, y[i])
+            assert tuple(xy) == (i - 0.1, y[i])
         for i, xy in enumerate(ax.lines[1].get_xydata()):
-            assert tuple(xy) == (i + .1, y[2 + i])
+            assert tuple(xy) == (i + 0.1, y[2 + i])
 
     def test_dodge_log_scale(self):
-
         x, y = [10, 1000, 10, 1000], [1, 2, 3, 4]
         hue = ["x", "x", "y", "y"]
         ax = mpl.figure.Figure().subplots()
         ax.set_xscale("log")
-        pointplot(x=x, y=y, hue=hue, dodge=.2, native_scale=True, errorbar=None, ax=ax)
+        pointplot(x=x, y=y, hue=hue, dodge=0.2, native_scale=True, errorbar=None, ax=ax)
         for i, xy in enumerate(ax.lines[0].get_xydata()):
-            assert tuple(xy) == approx((10 ** (np.log10(x[i]) - .2), y[i]))
+            assert tuple(xy) == approx((10 ** (np.log10(x[i]) - 0.2), y[i]))
         for i, xy in enumerate(ax.lines[1].get_xydata()):
-            assert tuple(xy) == approx((10 ** (np.log10(x[2 + i]) + .2), y[2 + i]))
+            assert tuple(xy) == approx((10 ** (np.log10(x[2 + i]) + 0.2), y[2 + i]))
 
     def test_err_kws(self):
-
         x, y = ["a", "a", "b", "b"], [1, 2, 3, 4]
-        err_kws = dict(color=(.2, .5, .3), linewidth=10)
+        err_kws = dict(color=(0.2, 0.5, 0.3), linewidth=10)
         ax = pointplot(x=x, y=y, errorbar=("pi", 100), err_kws=err_kws)
         for line in ax.lines[1:]:
             assert same_color(line.get_color(), err_kws["color"])
             assert line.get_linewidth() == err_kws["linewidth"]
 
     def test_err_kws_inherited(self):
-
         x, y = ["a", "a", "b", "b"], [1, 2, 3, 4]
-        kws = dict(color=(.2, .5, .3), linewidth=10)
+        kws = dict(color=(0.2, 0.5, 0.3), linewidth=10)
         ax = pointplot(x=x, y=y, errorbar=("pi", 100), **kws)
         for line in ax.lines[1:]:
             assert same_color(line.get_color(), kws["color"])
             assert line.get_linewidth() == kws["linewidth"]
 
     @pytest.mark.skipif(
-        _version_predates(mpl, "3.6"),
-        reason="Legend handle missing marker property"
+        _version_predates(mpl, "3.6"), reason="Legend handle missing marker property"
     )
     def test_legend_contents(self):
-
         x, y = ["a", "a", "b", "b"], [1, 2, 3, 4]
         hue = ["x", "y", "x", "y"]
         ax = pointplot(x=x, y=y, hue=hue)
@@ -2634,11 +2430,9 @@ class TestPointPlot(SharedAggTests):
             assert same_color(handle.get_color(), f"C{i}")
 
     @pytest.mark.skipif(
-        _version_predates(mpl, "3.6"),
-        reason="Legend handle missing marker property"
+        _version_predates(mpl, "3.6"), reason="Legend handle missing marker property"
     )
     def test_legend_set_props(self):
-
         x, y = ["a", "a", "b", "b"], [1, 2, 3, 4]
         hue = ["x", "y", "x", "y"]
         kws = dict(marker="s", linewidth=1)
@@ -2649,11 +2443,9 @@ class TestPointPlot(SharedAggTests):
             assert handle.get_linewidth() == kws["linewidth"]
 
     @pytest.mark.skipif(
-        _version_predates(mpl, "3.6"),
-        reason="Legend handle missing marker property"
+        _version_predates(mpl, "3.6"), reason="Legend handle missing marker property"
     )
     def test_legend_synced_props(self):
-
         x, y = ["a", "a", "b", "b"], [1, 2, 3, 4]
         hue = ["x", "y", "x", "y"]
         kws = dict(markers=["s", "d"], linestyles=["--", ":"])
@@ -2683,14 +2475,13 @@ class TestPointPlot(SharedAggTests):
             dict(data="long", x="a", y="y", errorbar=("pi", 50)),
             dict(data="long", x="a", y="y", errorbar=None),
             dict(data="null", x="a", y="y", hue="a", dodge=True),
-            dict(data="null", x="a", y="y", hue="a", dodge=.2),
-            dict(data="long", x="a", y="y", capsize=.3, err_kws=dict(c="k")),
+            dict(data="null", x="a", y="y", hue="a", dodge=0.2),
+            dict(data="long", x="a", y="y", capsize=0.3, err_kws=dict(c="k")),
             dict(data="long", x="a", y="y", color="blue", marker="s"),
             dict(data="long", x="a", y="y", hue="a", markers=["s", "d", "p"]),
-        ]
+        ],
     )
     def test_vs_catplot(self, long_df, wide_df, null_df, flat_series, kwargs):
-
         kwargs = kwargs.copy()
         kwargs["seed"] = 0
         kwargs["n_boot"] = 10
@@ -2714,18 +2505,15 @@ class TestPointPlot(SharedAggTests):
         assert_plots_equal(ax, g.ax)
 
     def test_legend_disabled(self, long_df):
-
         ax = pointplot(long_df, x="x", y="y", hue="b", legend=False)
         assert ax.get_legend() is None
 
     def test_join_deprecation(self):
-
         with pytest.warns(UserWarning, match="The `join` parameter"):
             ax = pointplot(x=["a", "b", "c"], y=[1, 2, 3], join=False)
         assert ax.lines[0].get_linestyle().lower() == "none"
 
     def test_scale_deprecation(self):
-
         x, y = ["a", "b", "c"], [1, 2, 3]
         ax = pointplot(x=x, y=y, errorbar=None)
         with pytest.warns(UserWarning, match="The `scale` parameter"):
@@ -2735,19 +2523,16 @@ class TestPointPlot(SharedAggTests):
         assert l2.get_markersize() > l1.get_markersize()
 
     def test_layered_plot_clipping(self):
-
-        x, y = ['a'], [4]
+        x, y = ["a"], [4]
         pointplot(x=x, y=y)
-        x, y = ['b'], [5]
+        x, y = ["b"], [5]
         ax = pointplot(x=x, y=y)
         y_range = ax.viewLim.intervaly
         assert y_range[0] < 4 and y_range[1] > 5
 
 
 class TestCountPlot:
-
     def test_empty(self):
-
         ax = countplot()
         assert not ax.patches
 
@@ -2755,7 +2540,6 @@ class TestCountPlot:
         assert not ax.patches
 
     def test_labels_long(self, long_df):
-
         fig = mpl.figure.Figure()
         axs = fig.subplots(2)
         countplot(long_df, x="a", ax=axs[0])
@@ -2770,7 +2554,6 @@ class TestCountPlot:
         assert axs[1].get_ylabel() == "percent"
 
     def test_wide_data(self, wide_df):
-
         ax = countplot(wide_df)
         assert len(ax.patches) == len(wide_df.columns)
         for i, bar in enumerate(ax.patches):
@@ -2780,7 +2563,6 @@ class TestCountPlot:
             assert bar.get_width() == approx(0.8)
 
     def test_flat_series(self):
-
         vals = ["a", "b", "c"]
         counts = [2, 1, 4]
         vals = pd.Series([x for x, n in zip(vals, counts) for _ in range(n)])
@@ -2792,7 +2574,6 @@ class TestCountPlot:
             assert bar.get_width() == counts[i]
 
     def test_x_series(self):
-
         vals = ["a", "b", "c"]
         counts = [2, 1, 4]
         vals = pd.Series([x for x, n in zip(vals, counts) for _ in range(n)])
@@ -2804,7 +2585,6 @@ class TestCountPlot:
             assert bar.get_width() == approx(0.8)
 
     def test_y_series(self):
-
         vals = ["a", "b", "c"]
         counts = [2, 1, 4]
         vals = pd.Series([x for x, n in zip(vals, counts) for _ in range(n)])
@@ -2816,7 +2596,6 @@ class TestCountPlot:
             assert bar.get_width() == counts[i]
 
     def test_hue_redundant(self):
-
         vals = ["a", "b", "c"]
         counts = [2, 1, 4]
         vals = pd.Series([x for x, n in zip(vals, counts) for _ in range(n)])
@@ -2830,7 +2609,6 @@ class TestCountPlot:
             assert same_color(bar.get_facecolor(), f"C{i}")
 
     def test_hue_dodged(self):
-
         vals = ["a", "a", "a", "b", "b", "b"]
         hue = ["x", "y", "y", "x", "x", "x"]
         counts = [1, 3, 2, 0]
@@ -2838,10 +2616,7 @@ class TestCountPlot:
         ax = countplot(x=vals, hue=hue, saturation=1, legend=False)
         for i, bar in enumerate(ax.patches):
             sign = 1 if i // 2 else -1
-            assert (
-                bar.get_x() + bar.get_width() / 2
-                == approx(i % 2 + sign * 0.8 / 4)
-            )
+            assert bar.get_x() + bar.get_width() / 2 == approx(i % 2 + sign * 0.8 / 4)
             assert bar.get_y() == 0
             assert bar.get_height() == counts[i]
             assert bar.get_width() == approx(0.8 / 2)
@@ -2849,7 +2624,6 @@ class TestCountPlot:
 
     @pytest.mark.parametrize("stat", ["percent", "probability", "proportion"])
     def test_stat(self, long_df, stat):
-
         col = "a"
         order = categorical_order(long_df[col])
         expected = long_df[col].value_counts(normalize=True)
@@ -2860,17 +2634,14 @@ class TestCountPlot:
             assert bar.get_height() == approx(expected[order[i]])
 
     def test_xy_error(self, long_df):
-
         with pytest.raises(TypeError, match="Cannot pass values for both"):
             countplot(long_df, x="a", y="b")
 
     def test_legend_numeric_auto(self, long_df):
-
         ax = countplot(long_df, x="x", hue="x")
         assert len(ax.get_legend().texts) <= 6
 
     def test_legend_disabled(self, long_df):
-
         ax = countplot(long_df, x="x", hue="b", legend=False)
         assert ax.get_legend() is None
 
@@ -2893,11 +2664,10 @@ class TestCountPlot:
             dict(data="long", x="d", hue="a", native_scale=True),
             dict(data="long", x="a", stat="percent"),
             dict(data="long", x="a", hue="b", stat="proportion"),
-            dict(data="long", x="a", color="blue", ec="green", alpha=.5),
-        ]
+            dict(data="long", x="a", color="blue", ec="green", alpha=0.5),
+        ],
     )
     def test_vs_catplot(self, long_df, wide_df, null_df, flat_series, kwargs):
-
         kwargs = kwargs.copy()
         if kwargs["data"] == "long":
             kwargs["data"] = long_df
@@ -2920,6 +2690,7 @@ class TestCountPlot:
 
 class CategoricalFixture:
     """Test boxplot (also base class for things like violinplots)."""
+
     rs = np.random.RandomState(30)
     n_total = 60
     x = rs.randn(int(n_total / 3), 3)
@@ -2933,7 +2704,6 @@ class CategoricalFixture:
     x_df["W"] = g
 
     def get_box_artists(self, ax):
-
         if _version_predates(mpl, "3.5.0b0"):
             return ax.artists
         else:
@@ -2942,9 +2712,7 @@ class CategoricalFixture:
 
 
 class TestCatPlot(CategoricalFixture):
-
     def test_facet_organization(self):
-
         g = cat.catplot(x="g", y="y", data=self.df)
         assert g.axes.shape == (1, 1)
 
@@ -2958,14 +2726,13 @@ class TestCatPlot(CategoricalFixture):
         assert g.axes.shape == (2, 3)
 
     def test_plot_elements(self):
-
         g = cat.catplot(x="g", y="y", data=self.df, kind="point")
         want_lines = 1 + self.g.unique().size
         assert len(g.ax.lines) == want_lines
 
         g = cat.catplot(x="g", y="y", hue="h", data=self.df, kind="point")
-        want_lines = (
-            len(self.g.unique()) * len(self.h.unique()) + 2 * len(self.h.unique())
+        want_lines = len(self.g.unique()) * len(self.h.unique()) + 2 * len(
+            self.h.unique()
         )
         assert len(g.ax.lines) == want_lines
 
@@ -3001,13 +2768,11 @@ class TestCatPlot(CategoricalFixture):
         want_artists = self.g.nunique() * self.h.nunique()
         assert len(self.get_box_artists(g.ax)) == want_artists
 
-        g = cat.catplot(x="g", y="y", data=self.df,
-                        kind="violin", inner=None)
+        g = cat.catplot(x="g", y="y", data=self.df, kind="violin", inner=None)
         want_elements = self.g.unique().size
         assert len(g.ax.collections) == want_elements
 
-        g = cat.catplot(x="g", y="y", hue="h", data=self.df,
-                        kind="violin", inner=None)
+        g = cat.catplot(x="g", y="y", hue="h", data=self.df, kind="violin", inner=None)
         want_elements = self.g.nunique() * self.h.nunique()
         assert len(g.ax.collections) == want_elements
 
@@ -3022,17 +2787,14 @@ class TestCatPlot(CategoricalFixture):
         assert len(g.ax.collections) == want_elements
 
     def test_bad_plot_kind_error(self):
-
         with pytest.raises(ValueError):
             cat.catplot(x="g", y="y", data=self.df, kind="not_a_kind")
 
     def test_count_x_and_y(self):
-
         with pytest.raises(ValueError):
             cat.catplot(x="g", y="y", data=self.df, kind="count")
 
     def test_plot_colors(self):
-
         ax = cat.barplot(x="g", y="y", data=self.df)
         g = cat.catplot(x="g", y="y", data=self.df, kind="bar")
         for p1, p2 in zip(ax.patches, g.ax.patches):
@@ -3040,15 +2802,13 @@ class TestCatPlot(CategoricalFixture):
         plt.close("all")
 
         ax = cat.barplot(x="g", y="y", data=self.df, color="purple")
-        g = cat.catplot(x="g", y="y", data=self.df,
-                        kind="bar", color="purple")
+        g = cat.catplot(x="g", y="y", data=self.df, kind="bar", color="purple")
         for p1, p2 in zip(ax.patches, g.ax.patches):
             assert p1.get_facecolor() == p2.get_facecolor()
         plt.close("all")
 
         ax = cat.barplot(x="g", y="y", data=self.df, palette="Set2", hue="h")
-        g = cat.catplot(x="g", y="y", data=self.df,
-                        kind="bar", palette="Set2", hue="h")
+        g = cat.catplot(x="g", y="y", data=self.df, kind="bar", palette="Set2", hue="h")
         for p1, p2 in zip(ax.patches, g.ax.patches):
             assert p1.get_facecolor() == p2.get_facecolor()
         plt.close("all")
@@ -3074,7 +2834,6 @@ class TestCatPlot(CategoricalFixture):
         plt.close("all")
 
     def test_ax_kwarg_removal(self):
-
         f, ax = plt.subplots()
         with pytest.warns(UserWarning, match="catplot is a figure-level"):
             g = cat.catplot(x="g", y="y", data=self.df, ax=ax)
@@ -3082,7 +2841,6 @@ class TestCatPlot(CategoricalFixture):
         assert len(g.ax.collections) > 0
 
     def test_share_xy(self):
-
         # Test default behavior works
         g = cat.catplot(x="g", y="y", col="g", data=self.df, sharex=True)
         for ax in g.axes.flat:
@@ -3094,28 +2852,34 @@ class TestCatPlot(CategoricalFixture):
 
         # Test unsharing works
         g = cat.catplot(
-            x="g", y="y", col="g", data=self.df, sharex=False, kind="bar",
+            x="g",
+            y="y",
+            col="g",
+            data=self.df,
+            sharex=False,
+            kind="bar",
         )
         for ax in g.axes.flat:
             assert len(ax.patches) == 1
 
         g = cat.catplot(
-            x="y", y="g", col="g", data=self.df, sharey=False, kind="bar",
+            x="y",
+            y="g",
+            col="g",
+            data=self.df,
+            sharey=False,
+            kind="bar",
         )
         for ax in g.axes.flat:
             assert len(ax.patches) == 1
 
-        g = cat.catplot(
-            x="g", y="y", col="g", data=self.df, sharex=False, color="b"
-        )
+        g = cat.catplot(x="g", y="y", col="g", data=self.df, sharex=False, color="b")
         for ax in g.axes.flat:
-            assert ax.get_xlim() == (-.5, .5)
+            assert ax.get_xlim() == (-0.5, 0.5)
 
-        g = cat.catplot(
-            x="y", y="g", col="g", data=self.df, sharey=False, color="r"
-        )
+        g = cat.catplot(x="y", y="g", col="g", data=self.df, sharey=False, color="r")
         for ax in g.axes.flat:
-            assert ax.get_ylim() == (.5, -.5)
+            assert ax.get_ylim() == (0.5, -0.5)
 
         # Make sure order is used if given, regardless of sharex value
         order = self.df.g.unique()
@@ -3128,7 +2892,6 @@ class TestCatPlot(CategoricalFixture):
             assert len(ax.collections) == len(self.df.g.unique())
 
     def test_facetgrid_data(self, long_df):
-
         g1 = catplot(data=long_df, x="a", y="y", col="c")
         assert g1.data is long_df
 
@@ -3137,7 +2900,6 @@ class TestCatPlot(CategoricalFixture):
 
     @pytest.mark.parametrize("var", ["col", "row"])
     def test_array_faceter(self, long_df, var):
-
         g1 = catplot(data=long_df, x="y", **{var: "a"})
         g2 = catplot(data=long_df, x="y", **{var: long_df["a"].to_numpy()})
 
@@ -3145,62 +2907,51 @@ class TestCatPlot(CategoricalFixture):
             assert_plots_equal(ax1, ax2)
 
     def test_invalid_kind(self, long_df):
-
         with pytest.raises(ValueError, match="Invalid `kind`: 'wrong'"):
             catplot(long_df, kind="wrong")
 
     def test_legend_with_auto(self):
-
-        g1 = catplot(self.df, x="g", y="y", hue="g", legend='auto')
+        g1 = catplot(self.df, x="g", y="y", hue="g", legend="auto")
         assert g1._legend is None
 
         g2 = catplot(self.df, x="g", y="y", hue="g", legend=True)
         assert g2._legend is not None
 
     def test_weights_warning(self, long_df):
-
         with pytest.warns(UserWarning, match="The `weights` parameter"):
             g = catplot(long_df, x="a", y="y", weights="z")
         assert g.ax is not None
 
 
 class TestBeeswarm:
-
     def test_could_overlap(self):
-
         p = Beeswarm()
         neighbors = p.could_overlap(
-            (1, 1, .5),
-            [(0, 0, .5),
-             (1, .1, .2),
-             (.5, .5, .5)]
+            (1, 1, 0.5), [(0, 0, 0.5), (1, 0.1, 0.2), (0.5, 0.5, 0.5)]
         )
-        assert_array_equal(neighbors, [(.5, .5, .5)])
+        assert_array_equal(neighbors, [(0.5, 0.5, 0.5)])
 
     def test_position_candidates(self):
-
         p = Beeswarm()
-        xy_i = (0, 1, .5)
-        neighbors = [(0, 1, .5), (0, 1.5, .5)]
+        xy_i = (0, 1, 0.5)
+        neighbors = [(0, 1, 0.5), (0, 1.5, 0.5)]
         candidates = p.position_candidates(xy_i, neighbors)
         dx1 = 1.05
-        dx2 = np.sqrt(1 - .5 ** 2) * 1.05
+        dx2 = np.sqrt(1 - 0.5**2) * 1.05
         assert_array_equal(
             candidates,
-            [(0, 1, .5), (-dx1, 1, .5), (dx1, 1, .5), (dx2, 1, .5), (-dx2, 1, .5)]
+            [(0, 1, 0.5), (-dx1, 1, 0.5), (dx1, 1, 0.5), (dx2, 1, 0.5), (-dx2, 1, 0.5)],
         )
 
     def test_find_first_non_overlapping_candidate(self):
-
         p = Beeswarm()
-        candidates = [(.5, 1, .5), (1, 1, .5), (1.5, 1, .5)]
-        neighbors = np.array([(0, 1, .5)])
+        candidates = [(0.5, 1, 0.5), (1, 1, 0.5), (1.5, 1, 0.5)]
+        neighbors = np.array([(0, 1, 0.5)])
 
         first = p.first_non_overlapping_candidate(candidates, neighbors)
-        assert_array_equal(first, (1, 1, .5))
+        assert_array_equal(first, (1, 1, 0.5))
 
     def test_beeswarm(self, long_df):
-
         p = Beeswarm()
         data = long_df["y"]
         d = data.diff().mean() * 1.5
@@ -3215,31 +2966,27 @@ class TestBeeswarm:
         assert_array_equal(y, swarm[:, 1])
 
     def test_add_gutters(self):
-
         p = Beeswarm(width=1)
 
         points = np.zeros(10)
         t_fwd = t_inv = lambda x: x
         assert_array_equal(points, p.add_gutters(points, 0, t_fwd, t_inv))
 
-        points = np.array([0, -1, .4, .8])
+        points = np.array([0, -1, 0.4, 0.8])
         msg = r"50.0% of the points cannot be placed.+$"
         with pytest.warns(UserWarning, match=msg):
             new_points = p.add_gutters(points, 0, t_fwd, t_inv)
-        assert_array_equal(new_points, np.array([0, -.5, .4, .5]))
+        assert_array_equal(new_points, np.array([0, -0.5, 0.4, 0.5]))
 
 
 class TestBoxPlotContainer:
-
     @pytest.fixture
     def container(self, wide_array):
-
         ax = mpl.figure.Figure().subplots()
         artist_dict = ax.boxplot(wide_array)
         return BoxPlotContainer(artist_dict)
 
     def test_repr(self, container, wide_array):
-
         n = wide_array.shape[1]
         assert str(container) == f"<BoxPlotContainer object with {n} boxes>"
 
@@ -3249,13 +2996,11 @@ class TestBoxPlotContainer:
                 assert hasattr(artist_tuple, attr)
 
     def test_label(self, container):
-
         label = "a box plot"
         container.set_label(label)
         assert container.get_label() == label
 
     def test_children(self, container):
-
         children = container.get_children()
         for child in children:
             assert isinstance(child, mpl.artist.Artist)
